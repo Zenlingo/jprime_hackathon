@@ -251,7 +251,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               // Sign in with LinkedIn button
               GestureDetector(
                 onTap: () async {
-                  final url = await LinkedInWebViewScreen.show(context);
+                  final url = await LinkedInFlowScreen.show(context);
                   if (url != null && mounted) {
                     setState(() => _linkedInController.text = url);
                   }

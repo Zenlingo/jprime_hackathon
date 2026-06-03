@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../theme/app_theme.dart';
@@ -11,7 +13,7 @@ import 'linkedin_webview_screen.dart';
 class ConnectScreen extends StatefulWidget {
   final VoidCallback? onThemeToggle;
   final String? linkedInUrl;
-  final void Function(String) onLinkedInChanged;
+  final void Function(String?) onLinkedInChanged;
 
   const ConnectScreen({
     super.key,
@@ -65,7 +67,7 @@ class _ConnectScreenState extends State<ConnectScreen> {
 
 class _MyQR extends StatefulWidget {
   final String? linkedInUrl;
-  final void Function(String) onLinkedInChanged;
+  final void Function(String?) onLinkedInChanged;
 
   const _MyQR({required this.linkedInUrl, required this.onLinkedInChanged});
 
@@ -75,7 +77,12 @@ class _MyQR extends StatefulWidget {
 
 class _MyQRState extends State<_MyQR> {
   bool _editing = false;
+  String? _validationError;
   late TextEditingController _controller;
+
+  static final _linkedInPattern = RegExp(
+    r'^https?://(www\.)?linkedin\.com/in/[a-zA-Z0-9\-_%]+/?$',
+  );
 
   @override
   void initState() {
@@ -97,12 +104,35 @@ class _MyQRState extends State<_MyQR> {
     super.dispose();
   }
 
+  String? _validateUrl(String url) {
+    if (url.isEmpty) return 'Please enter a LinkedIn URL';
+    if (!_linkedInPattern.hasMatch(url)) {
+      return 'Enter a valid LinkedIn URL (e.g. https://linkedin.com/in/yourname)';
+    }
+    return null;
+  }
+
   void _save() {
     final url = _controller.text.trim();
-    if (url.isNotEmpty) {
-      widget.onLinkedInChanged(url);
-      setState(() => _editing = false);
+    final error = _validateUrl(url);
+    if (error != null) {
+      setState(() => _validationError = error);
+      return;
     }
+    widget.onLinkedInChanged(url);
+    setState(() {
+      _editing = false;
+      _validationError = null;
+    });
+  }
+
+  void _remove() {
+    widget.onLinkedInChanged(null);
+    _controller.clear();
+    setState(() {
+      _editing = false;
+      _validationError = null;
+    });
   }
 
   @override
@@ -123,8 +153,15 @@ class _MyQRState extends State<_MyQR> {
         onSave: _save,
         onCancel: () => setState(() {
           _editing = false;
+          _validationError = null;
           _controller.text = widget.linkedInUrl ?? '';
         }),
+        validationError: _validationError,
+        onChanged: () {
+          if (_validationError != null) {
+            setState(() => _validationError = null);
+          }
+        },
       );
     }
 
@@ -195,25 +232,36 @@ class _MyQRState extends State<_MyQR> {
                   color: jp.fgMuted,
                 ),
               ),
-              const SizedBox(height: 14),
-              GestureDetector(
-                onTap: () => setState(() => _editing = true),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    PhosphorIcon(PhosphorIconsRegular.pencilSimple,
-                        size: 14, color: jp.accent),
-                    const SizedBox(width: 5),
-                    Text(
-                      'Change LinkedIn URL',
-                      style: GoogleFonts.hankenGrotesk(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: jp.accent,
-                      ),
-                    ),
-                  ],
-                ),
+              const SizedBox(height: 18),
+              // Action buttons row
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  _ActionChip(
+                    icon: PhosphorIconsRegular.pencilSimple,
+                    label: 'Edit URL',
+                    color: jp.accent,
+                    onTap: () => setState(() => _editing = true),
+                  ),
+                  const SizedBox(width: 12),
+                  _ActionChip(
+                    icon: PhosphorIconsRegular.linkedinLogo,
+                    label: 'Reconnect',
+                    color: const Color(0xFF0A66C2),
+                    onTap: () async {
+                      final url = await LinkedInFlowScreen.show(context,
+                          skipInitialCheck: true);
+                      if (url != null) widget.onLinkedInChanged(url);
+                    },
+                  ),
+                  const SizedBox(width: 12),
+                  _ActionChip(
+                    icon: PhosphorIconsRegular.trash,
+                    label: 'Remove',
+                    color: jp.fgMuted,
+                    onTap: _remove,
+                  ),
+                ],
               ),
             ],
           ),
@@ -225,7 +273,7 @@ class _MyQRState extends State<_MyQR> {
 
 class _AddLinkedInPrompt extends StatelessWidget {
   final VoidCallback onAdd;
-  final void Function(String) onLinkedInChanged;
+  final void Function(String?) onLinkedInChanged;
 
   const _AddLinkedInPrompt({
     required this.onAdd,
@@ -235,97 +283,99 @@ class _AddLinkedInPrompt extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final jp = context.jp;
-    return Padding(
+    return ListView(
       padding: const EdgeInsets.fromLTRB(18, 18, 18, 90),
-      child: Container(
-        padding: const EdgeInsets.all(28),
-        decoration: BoxDecoration(
-          color: jp.surface,
-          border: Border.all(color: jp.border),
-          borderRadius: BorderRadius.circular(JPSpacing.rLg),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: const Color(0xFF0A66C2).withValues(alpha: 0.12),
-              ),
-              alignment: Alignment.center,
-              child: PhosphorIcon(PhosphorIconsFill.linkedinLogo,
-                  size: 28, color: const Color(0xFF0A66C2)),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Share your LinkedIn',
-              style: GoogleFonts.spaceGrotesk(
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
-                letterSpacing: -0.2,
-                color: jp.fg,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              'Sign in to auto-fetch your profile, or enter the URL manually.',
-              textAlign: TextAlign.center,
-              style: GoogleFonts.hankenGrotesk(
-                fontSize: 14,
-                color: jp.fgSecondary,
-              ),
-            ),
-            const SizedBox(height: 22),
-            // Sign in with LinkedIn button
-            GestureDetector(
-              onTap: () async {
-                final url = await LinkedInWebViewScreen.show(context);
-                if (url != null) onLinkedInChanged(url);
-              },
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 14),
+      children: [
+        Container(
+          padding: const EdgeInsets.all(28),
+          decoration: BoxDecoration(
+            color: jp.surface,
+            border: Border.all(color: jp.border),
+            borderRadius: BorderRadius.circular(JPSpacing.rLg),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 56,
+                height: 56,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF0A66C2),
-                  borderRadius: BorderRadius.circular(12),
+                  shape: BoxShape.circle,
+                  color: const Color(0xFF0A66C2).withValues(alpha: 0.12),
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    PhosphorIcon(PhosphorIconsFill.linkedinLogo,
-                        size: 20, color: Colors.white),
-                    const SizedBox(width: 10),
-                    Text(
-                      'Sign in with LinkedIn',
-                      style: GoogleFonts.spaceGrotesk(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ],
+                alignment: Alignment.center,
+                child: PhosphorIcon(PhosphorIconsFill.linkedinLogo,
+                    size: 28, color: const Color(0xFF0A66C2)),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Share your LinkedIn',
+                style: GoogleFonts.spaceGrotesk(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -0.2,
+                  color: jp.fg,
                 ),
               ),
-            ),
-            const SizedBox(height: 16),
-            // Or enter manually
-            GestureDetector(
-              onTap: onAdd,
-              child: Text(
-                'Enter URL manually',
+              const SizedBox(height: 6),
+              Text(
+                'Sign in to auto-fetch your profile, or enter the URL manually.',
+                textAlign: TextAlign.center,
                 style: GoogleFonts.hankenGrotesk(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: jp.fgMuted,
-                  decoration: TextDecoration.underline,
+                  fontSize: 14,
+                  color: jp.fgSecondary,
                 ),
               ),
-            ),
-          ],
+              const SizedBox(height: 22),
+              // Sign in with LinkedIn button
+              GestureDetector(
+                onTap: () async {
+                  final url = await LinkedInFlowScreen.show(context);
+                  if (url != null) onLinkedInChanged(url);
+                },
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0A66C2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      PhosphorIcon(PhosphorIconsFill.linkedinLogo,
+                          size: 20, color: Colors.white),
+                      const SizedBox(width: 10),
+                      Text(
+                        'Sign in with LinkedIn',
+                        style: GoogleFonts.spaceGrotesk(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              // Or enter manually
+              GestureDetector(
+                onTap: onAdd,
+                child: Text(
+                  'Enter URL manually',
+                  style: GoogleFonts.hankenGrotesk(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: jp.fgMuted,
+                    decoration: TextDecoration.underline,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
-      ),
+      ],
     );
   }
 }
@@ -334,172 +384,461 @@ class _LinkedInEditor extends StatelessWidget {
   final TextEditingController controller;
   final VoidCallback onSave;
   final VoidCallback onCancel;
+  final String? validationError;
+  final VoidCallback? onChanged;
 
   const _LinkedInEditor({
     required this.controller,
     required this.onSave,
     required this.onCancel,
+    this.validationError,
+    this.onChanged,
   });
 
   @override
   Widget build(BuildContext context) {
     final jp = context.jp;
-    return Padding(
+    final hasError = validationError != null;
+    return ListView(
       padding: const EdgeInsets.fromLTRB(18, 18, 18, 90),
-      child: Container(
-        padding: const EdgeInsets.all(22),
-        decoration: BoxDecoration(
-          color: jp.surface,
-          border: Border.all(color: jp.border),
-          borderRadius: BorderRadius.circular(JPSpacing.rLg),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'LinkedIn Profile URL',
-              style: GoogleFonts.spaceGrotesk(
-                fontSize: 17,
-                fontWeight: FontWeight.w700,
-                color: jp.fg,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(22),
+          decoration: BoxDecoration(
+            color: jp.surface,
+            border: Border.all(color: jp.border),
+            borderRadius: BorderRadius.circular(JPSpacing.rLg),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'LinkedIn Profile URL',
+                style: GoogleFonts.spaceGrotesk(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                  color: jp.fg,
+                ),
               ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: controller,
-              autofocus: true,
-              style: GoogleFonts.hankenGrotesk(
-                fontSize: 15,
-                color: jp.fg,
-              ),
-              decoration: InputDecoration(
-                hintText: 'https://linkedin.com/in/yourname',
-                hintStyle: GoogleFonts.hankenGrotesk(
+              const SizedBox(height: 12),
+              TextField(
+                controller: controller,
+                autofocus: true,
+                onChanged: (_) => onChanged?.call(),
+                style: GoogleFonts.hankenGrotesk(
                   fontSize: 15,
-                  color: jp.fgMuted,
+                  color: jp.fg,
                 ),
-                prefixIcon: Padding(
-                  padding: const EdgeInsets.only(left: 14, right: 10),
-                  child: PhosphorIcon(PhosphorIconsRegular.linkedinLogo,
-                      size: 20, color: jp.fgMuted),
-                ),
-                prefixIconConstraints:
-                    const BoxConstraints(minWidth: 0, minHeight: 0),
-                filled: true,
-                fillColor: jp.bg,
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: jp.border),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: jp.border),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: jp.accent, width: 1.5),
-                ),
-              ),
-              keyboardType: TextInputType.url,
-              onSubmitted: (_) => onSave(),
-            ),
-            const SizedBox(height: 14),
-            Row(
-              children: [
-                Expanded(
-                  child: GestureDetector(
-                    onTap: onCancel,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: jp.border),
-                        borderRadius: BorderRadius.circular(JPSpacing.rPill),
-                      ),
-                      alignment: Alignment.center,
-                      child: Text(
-                        'Cancel',
-                        style: GoogleFonts.spaceGrotesk(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: jp.fgSecondary,
-                        ),
-                      ),
-                    ),
+                decoration: InputDecoration(
+                  hintText: 'https://linkedin.com/in/yourname',
+                  hintStyle: GoogleFonts.hankenGrotesk(
+                    fontSize: 15,
+                    color: jp.fgMuted,
+                  ),
+                  prefixIcon: Padding(
+                    padding: const EdgeInsets.only(left: 14, right: 10),
+                    child: PhosphorIcon(PhosphorIconsRegular.linkedinLogo,
+                        size: 20, color: hasError ? jp.warning : jp.fgMuted),
+                  ),
+                  prefixIconConstraints:
+                      const BoxConstraints(minWidth: 0, minHeight: 0),
+                  filled: true,
+                  fillColor: jp.bg,
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: jp.border),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(
+                        color: hasError ? jp.warning : jp.border),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(
+                        color: hasError ? jp.warning : jp.accent, width: 1.5),
                   ),
                 ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: GestureDetector(
-                    onTap: onSave,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      decoration: BoxDecoration(
-                        color: jp.accent,
-                        borderRadius: BorderRadius.circular(JPSpacing.rPill),
-                      ),
-                      alignment: Alignment.center,
-                      child: Text(
-                        'Save',
-                        style: GoogleFonts.spaceGrotesk(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: jp.onAccent,
-                        ),
-                      ),
-                    ),
+                keyboardType: TextInputType.url,
+                onSubmitted: (_) => onSave(),
+              ),
+              if (hasError) ...[
+                const SizedBox(height: 8),
+                Text(
+                  validationError!,
+                  style: GoogleFonts.hankenGrotesk(
+                    fontSize: 12,
+                    color: jp.warning,
                   ),
                 ),
               ],
-            ),
-          ],
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: onCancel,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: jp.border),
+                          borderRadius:
+                              BorderRadius.circular(JPSpacing.rPill),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          'Cancel',
+                          style: GoogleFonts.spaceGrotesk(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: jp.fgSecondary,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: onSave,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        decoration: BoxDecoration(
+                          color: jp.accent,
+                          borderRadius:
+                              BorderRadius.circular(JPSpacing.rPill),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          'Save',
+                          style: GoogleFonts.spaceGrotesk(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: jp.onAccent,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
+      ],
+    );
+  }
+}
+
+class _ActionChip extends StatelessWidget {
+  final PhosphorIconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _ActionChip({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          PhosphorIcon(icon, size: 18, color: color),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: GoogleFonts.hankenGrotesk(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: color,
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
-class _ScanView extends StatelessWidget {
+class _ScanView extends StatefulWidget {
   const _ScanView();
+
+  @override
+  State<_ScanView> createState() => _ScanViewState();
+}
+
+class _ScanViewState extends State<_ScanView> {
+  PermissionStatus? _permissionStatus;
+  MobileScannerController? _scannerController;
+  String? _scannedUrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkPermission();
+  }
+
+  Future<void> _checkPermission() async {
+    final status = await Permission.camera.status;
+    if (mounted) setState(() => _permissionStatus = status);
+    if (status.isGranted) _startScanner();
+  }
+
+  Future<void> _requestPermission() async {
+    final status = await Permission.camera.request();
+    if (mounted) setState(() => _permissionStatus = status);
+    if (status.isGranted) _startScanner();
+  }
+
+  void _startScanner() {
+    _scannerController = MobileScannerController();
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    _scannerController?.dispose();
+    super.dispose();
+  }
+
+  void _onDetect(BarcodeCapture capture) {
+    if (_scannedUrl != null) return;
+    for (final barcode in capture.barcodes) {
+      final value = barcode.rawValue;
+      if (value != null && value.isNotEmpty) {
+        setState(() => _scannedUrl = value);
+        _scannerController?.stop();
+        _showResult(value);
+        break;
+      }
+    }
+  }
+
+  void _showResult(String url) {
+    final jp = context.jp;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: jp.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: jp.border,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 20),
+            PhosphorIcon(PhosphorIconsFill.checkCircle,
+                size: 48, color: jp.accent),
+            const SizedBox(height: 12),
+            Text(
+              'QR Code Scanned',
+              style: GoogleFonts.spaceGrotesk(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: jp.fg,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              url,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.jetBrainsMono(
+                fontSize: 13,
+                color: jp.accent,
+              ),
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: GestureDetector(
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _resetScanner();
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  decoration: BoxDecoration(
+                    color: jp.accent,
+                    borderRadius: BorderRadius.circular(JPSpacing.rPill),
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    'Scan Another',
+                    style: GoogleFonts.spaceGrotesk(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: jp.onAccent,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ).whenComplete(_resetScanner);
+  }
+
+  void _resetScanner() {
+    if (mounted) {
+      setState(() => _scannedUrl = null);
+      _scannerController?.start();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final jp = context.jp;
-    return Padding(
-      padding: const EdgeInsets.all(18),
-      child: AspectRatio(
-        aspectRatio: 1,
+
+    // Still loading permission status
+    if (_permissionStatus == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    // Permission denied — show prompt
+    if (!_permissionStatus!.isGranted) {
+      return Padding(
+        padding: const EdgeInsets.all(18),
         child: Container(
+          padding: const EdgeInsets.all(28),
           decoration: BoxDecoration(
-            color: jp.bgSubtle,
+            color: jp.surface,
             border: Border.all(color: jp.border),
             borderRadius: BorderRadius.circular(JPSpacing.rLg),
           ),
-          child: Stack(
-            alignment: Alignment.center,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                width: 200,
-                height: 200,
+                width: 56,
+                height: 56,
                 decoration: BoxDecoration(
-                  border: Border.all(color: jp.accent, width: 2),
-                  borderRadius: BorderRadius.circular(16),
+                  shape: BoxShape.circle,
+                  color: jp.accentSoft,
+                ),
+                alignment: Alignment.center,
+                child: PhosphorIcon(PhosphorIconsRegular.camera,
+                    size: 28, color: jp.accent),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Camera Access Needed',
+                style: GoogleFonts.spaceGrotesk(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -0.2,
+                  color: jp.fg,
                 ),
               ),
-              Positioned(
-                bottom: 18,
-                child: Text(
-                  'Point at someone\'s jPrime QR',
-                  style: GoogleFonts.hankenGrotesk(
-                    fontSize: 13,
-                    color: jp.fgSecondary,
+              const SizedBox(height: 6),
+              Text(
+                'Allow camera access to scan QR codes from other attendees.',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.hankenGrotesk(
+                  fontSize: 14,
+                  color: jp.fgSecondary,
+                ),
+              ),
+              const SizedBox(height: 20),
+              GestureDetector(
+                onTap: _permissionStatus!.isPermanentlyDenied
+                    ? openAppSettings
+                    : _requestPermission,
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 13),
+                  decoration: BoxDecoration(
+                    color: jp.accent,
+                    borderRadius: BorderRadius.circular(JPSpacing.rPill),
+                  ),
+                  child: Text(
+                    _permissionStatus!.isPermanentlyDenied
+                        ? 'Open Settings'
+                        : 'Allow Camera',
+                    style: GoogleFonts.spaceGrotesk(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: jp.onAccent,
+                    ),
                   ),
                 ),
               ),
             ],
           ),
+        ),
+      );
+    }
+
+    // Permission granted — show scanner
+    if (_scannerController == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(18, 10, 18, 110),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(JPSpacing.rLg),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            MobileScanner(
+              controller: _scannerController!,
+              onDetect: _onDetect,
+            ),
+            // Scan frame overlay
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 60,
+              child: Center(
+                child: Container(
+                  width: 260,
+                  height: 260,
+                  decoration: BoxDecoration(
+                    border: Border.all(color: jp.accent, width: 2.5),
+                    borderRadius: BorderRadius.circular(24),
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              bottom: 24,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.6),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  'Point at someone\'s jPrime QR',
+                  style: GoogleFonts.hankenGrotesk(
+                    fontSize: 13,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

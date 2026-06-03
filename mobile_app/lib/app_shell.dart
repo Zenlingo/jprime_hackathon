@@ -49,11 +49,15 @@ class _AppShellState extends State<AppShell> {
     }
   }
 
-  Future<void> _saveLinkedInUrl(String url) async {
+  Future<void> _saveLinkedInUrl(String? url) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('linkedin_url', url);
+    if (url != null && url.isNotEmpty) {
+      await prefs.setString('linkedin_url', url);
+    } else {
+      await prefs.remove('linkedin_url');
+    }
     if (mounted) {
-      setState(() => _linkedInUrl = url);
+      setState(() => _linkedInUrl = url?.isNotEmpty == true ? url : null);
     }
   }
 
