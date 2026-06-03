@@ -6,10 +6,10 @@ import '../theme/app_theme.dart';
 import '../data/sample_data.dart';
 import '../widgets/app_header.dart';
 import '../widgets/track_tag.dart';
+import '../widgets/level_badge.dart';
 import '../widgets/live_dot.dart';
 import '../widgets/progress_bar.dart';
 import '../widgets/fav_star.dart';
-import '../widgets/avatar.dart';
 import '../widgets/section_label.dart';
 import '../widgets/jp_switch.dart';
 import '../widgets/jp_button.dart';
@@ -21,6 +21,7 @@ class SessionDetailScreen extends StatefulWidget {
   final VoidCallback onFav;
   final VoidCallback onClose;
   final void Function(SessionData session) onFindRoom;
+  final void Function(SpeakerData speaker)? onOpenSpeaker;
 
   const SessionDetailScreen({
     super.key,
@@ -30,6 +31,7 @@ class SessionDetailScreen extends StatefulWidget {
     required this.onFav,
     required this.onClose,
     required this.onFindRoom,
+    this.onOpenSpeaker,
   });
 
   @override
@@ -70,7 +72,8 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
                   runSpacing: 8,
                   children: [
                     TrackTag(trackId: s.trackId),
-                    _Pill(label: s.level),
+                    if (s.level.isNotEmpty)
+                      LevelBadge(level: s.level),
                     if (isLive)
                       Container(
                         padding: const EdgeInsets.symmetric(
@@ -169,77 +172,36 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
                 ),
                 const SizedBox(height: 22),
 
-                // Speaker
+                // Speaker(s)
                 if (sp != null) ...[
                   SectionLabel(
                     icon: PhosphorIconsRegular.user,
-                    text: 'Speaker',
+                    text: s.coSpeakerName != null ? 'Speakers' : 'Speaker',
                   ),
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: jp.surface,
-                      border: Border.all(color: jp.border),
-                      borderRadius: BorderRadius.circular(JPSpacing.rMd),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            SpeakerAvatar(
-                                speakerId: s.speakerId!, size: 48),
-                            const SizedBox(width: 12),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  sp.name,
-                                  style: GoogleFonts.spaceGrotesk(
-                                    fontSize: 17,
-                                    fontWeight: FontWeight.w600,
-                                    color: jp.fg,
-                                  ),
-                                ),
-                                Text(
-                                  sp.role,
-                                  style: GoogleFonts.hankenGrotesk(
-                                    fontSize: 13,
-                                    color: jp.fgSecondary,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 14),
-                        Row(
-                          children: [
-                            PhosphorIconsRegular.githubLogo,
-                            PhosphorIconsRegular.linkedinLogo,
-                            PhosphorIconsRegular.xLogo,
-                          ]
-                              .map((icon) => Padding(
-                                    padding: const EdgeInsets.only(right: 10),
-                                    child: Container(
-                                      width: 40,
-                                      height: 40,
-                                      decoration: BoxDecoration(
-                                        color: jp.surface2,
-                                        border: Border.all(color: jp.border),
-                                        borderRadius: BorderRadius.circular(
-                                            JPSpacing.rSm),
-                                      ),
-                                      alignment: Alignment.center,
-                                      child: PhosphorIcon(icon,
-                                          size: 18, color: jp.fgSecondary),
-                                    ),
-                                  ))
-                              .toList(),
-                        ),
-                      ],
-                    ),
+                  _SpeakerCard(
+                    speaker: sp,
+                    onTap: widget.onOpenSpeaker != null
+                        ? () => widget.onOpenSpeaker!(sp)
+                        : null,
                   ),
+                  if (s.coSpeakerName != null) ...[
+                    const SizedBox(height: 10),
+                    Builder(builder: (context) {
+                      final coSlug = s.coSpeakerName!
+                          .toLowerCase()
+                          .replaceAll(RegExp(r'[^a-z0-9]'), '-')
+                          .replaceAll(RegExp(r'-+'), '-')
+                          .replaceAll(RegExp(r'^-|-$'), '');
+                      final coSp = JPData.speakers[coSlug];
+                      if (coSp == null) return const SizedBox.shrink();
+                      return _SpeakerCard(
+                        speaker: coSp,
+                        onTap: widget.onOpenSpeaker != null
+                            ? () => widget.onOpenSpeaker!(coSp)
+                            : null,
+                      );
+                    }),
+                  ],
                   const SizedBox(height: 18),
                 ],
 
@@ -318,29 +280,129 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
   }
 }
 
-class _Pill extends StatelessWidget {
-  final String label;
+class _SpeakerCard extends StatelessWidget {
+  final SpeakerData speaker;
+  final VoidCallback? onTap;
 
-  const _Pill({required this.label});
+  const _SpeakerCard({required this.speaker, this.onTap});
 
   @override
   Widget build(BuildContext context) {
     final jp = context.jp;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: jp.surface2,
-        border: Border.all(color: jp.border),
-        borderRadius: BorderRadius.circular(JPSpacing.rPill),
-      ),
-      child: Text(
-        label,
-        style: GoogleFonts.jetBrainsMono(
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-          color: jp.fgSecondary,
+    final sp = speaker;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: jp.surface,
+          border: Border.all(color: jp.border),
+          borderRadius: BorderRadius.circular(JPSpacing.rMd),
+        ),
+        child: Row(
+          children: [
+            // Photo
+            Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: sp.gradient,
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: sp.imageUrl != null
+                  ? Image.network(
+                      sp.imageUrl!,
+                      width: 52,
+                      height: 52,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) => Center(
+                        child: Text(
+                          sp.initials,
+                          style: GoogleFonts.spaceGrotesk(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    )
+                  : Center(
+                      child: Text(
+                        sp.initials,
+                        style: GoogleFonts.spaceGrotesk(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+            ),
+            const SizedBox(width: 14),
+            // Name, headline, social icons
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    sp.name,
+                    style: GoogleFonts.spaceGrotesk(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w600,
+                      color: jp.fg,
+                    ),
+                  ),
+                  if (sp.role.isNotEmpty)
+                    Text(
+                      sp.role,
+                      style: GoogleFonts.hankenGrotesk(
+                        fontSize: 13,
+                        color: jp.fgSecondary,
+                      ),
+                    ),
+                  if (sp.twitter != null || sp.bsky != null) ...[
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        if (sp.twitter != null) ...[
+                          PhosphorIcon(PhosphorIconsRegular.xLogo,
+                              size: 14, color: jp.fgMuted),
+                          const SizedBox(width: 4),
+                          Text(
+                            '@${sp.twitter}',
+                            style: GoogleFonts.hankenGrotesk(
+                              fontSize: 12,
+                              color: jp.fgMuted,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                        ],
+                        if (sp.bsky != null) ...[
+                          PhosphorIcon(PhosphorIconsRegular.butterfly,
+                              size: 14, color: jp.fgMuted),
+                          const SizedBox(width: 4),
+                          Text(
+                            sp.bsky!,
+                            style: GoogleFonts.hankenGrotesk(
+                              fontSize: 12,
+                              color: jp.fgMuted,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            if (onTap != null)
+              PhosphorIcon(PhosphorIconsRegular.caretRight,
+                  size: 18, color: jp.fgMuted),
+          ],
         ),
       ),
     );
   }
 }
+

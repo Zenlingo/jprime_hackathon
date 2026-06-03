@@ -4,6 +4,7 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_header.dart';
 import '../widgets/segmented_control.dart';
@@ -14,12 +15,16 @@ class ConnectScreen extends StatefulWidget {
   final VoidCallback? onThemeToggle;
   final String? linkedInUrl;
   final void Function(String?) onLinkedInChanged;
+  final String? displayName;
+  final void Function(String?) onDisplayNameChanged;
 
   const ConnectScreen({
     super.key,
     this.onThemeToggle,
     this.linkedInUrl,
     required this.onLinkedInChanged,
+    this.displayName,
+    required this.onDisplayNameChanged,
   });
 
   @override
@@ -57,6 +62,8 @@ class _ConnectScreenState extends State<ConnectScreen> {
               ? _MyQR(
                   linkedInUrl: widget.linkedInUrl,
                   onLinkedInChanged: widget.onLinkedInChanged,
+                  displayName: widget.displayName,
+                  onDisplayNameChanged: widget.onDisplayNameChanged,
                 )
               : const _ScanView(),
         ),
@@ -68,8 +75,15 @@ class _ConnectScreenState extends State<ConnectScreen> {
 class _MyQR extends StatefulWidget {
   final String? linkedInUrl;
   final void Function(String?) onLinkedInChanged;
+  final String? displayName;
+  final void Function(String?) onDisplayNameChanged;
 
-  const _MyQR({required this.linkedInUrl, required this.onLinkedInChanged});
+  const _MyQR({
+    required this.linkedInUrl,
+    required this.onLinkedInChanged,
+    this.displayName,
+    required this.onDisplayNameChanged,
+  });
 
   @override
   State<_MyQR> createState() => _MyQRState();
@@ -77,8 +91,10 @@ class _MyQR extends StatefulWidget {
 
 class _MyQRState extends State<_MyQR> {
   bool _editing = false;
+  bool _editingName = false;
   String? _validationError;
   late TextEditingController _controller;
+  late TextEditingController _nameController;
 
   static final _linkedInPattern = RegExp(
     r'^https?://(www\.)?linkedin\.com/in/[a-zA-Z0-9\-_%]+/?$',
@@ -88,6 +104,7 @@ class _MyQRState extends State<_MyQR> {
   void initState() {
     super.initState();
     _controller = TextEditingController(text: widget.linkedInUrl ?? '');
+    _nameController = TextEditingController(text: widget.displayName ?? '');
   }
 
   @override
@@ -96,11 +113,15 @@ class _MyQRState extends State<_MyQR> {
     if (oldWidget.linkedInUrl != widget.linkedInUrl && !_editing) {
       _controller.text = widget.linkedInUrl ?? '';
     }
+    if (oldWidget.displayName != widget.displayName && !_editingName) {
+      _nameController.text = widget.displayName ?? '';
+    }
   }
 
   @override
   void dispose() {
     _controller.dispose();
+    _nameController.dispose();
     super.dispose();
   }
 
@@ -128,9 +149,12 @@ class _MyQRState extends State<_MyQR> {
 
   void _remove() {
     widget.onLinkedInChanged(null);
+    widget.onDisplayNameChanged(null);
     _controller.clear();
+    _nameController.clear();
     setState(() {
       _editing = false;
+      _editingName = false;
       _validationError = null;
     });
   }
@@ -186,22 +210,89 @@ class _MyQRState extends State<_MyQR> {
             children: [
               const SpeakerAvatar(speakerId: 'venkat', size: 64),
               const SizedBox(height: 10),
-              Text(
-                'You \u00B7 Alex Petrov',
-                style: GoogleFonts.spaceGrotesk(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: -0.2,
-                  color: jp.fg,
+              if (_editingName)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _nameController,
+                          autofocus: true,
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.spaceGrotesk(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: jp.fg,
+                          ),
+                          decoration: InputDecoration(
+                            hintText: 'Your name',
+                            hintStyle: GoogleFonts.spaceGrotesk(
+                              fontSize: 18,
+                              color: jp.fgMuted,
+                            ),
+                            isDense: true,
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 10),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide: BorderSide(color: jp.border),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide: BorderSide(color: jp.border),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide:
+                                  BorderSide(color: jp.accent, width: 1.5),
+                            ),
+                          ),
+                          onSubmitted: (_) {
+                            final name = _nameController.text.trim();
+                            widget.onDisplayNameChanged(
+                                name.isNotEmpty ? name : null);
+                            setState(() => _editingName = false);
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      GestureDetector(
+                        onTap: () {
+                          final name = _nameController.text.trim();
+                          widget.onDisplayNameChanged(
+                              name.isNotEmpty ? name : null);
+                          setState(() => _editingName = false);
+                        },
+                        child: PhosphorIcon(PhosphorIconsRegular.check,
+                            size: 22, color: jp.accent),
+                      ),
+                    ],
+                  ),
+                )
+              else
+                GestureDetector(
+                  onTap: () => setState(() => _editingName = true),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        widget.displayName ?? 'Tap to set name',
+                        style: GoogleFonts.spaceGrotesk(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -0.2,
+                          color: widget.displayName != null
+                              ? jp.fg
+                              : jp.fgMuted,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      PhosphorIcon(PhosphorIconsRegular.pencilSimple,
+                          size: 16, color: jp.fgMuted),
+                    ],
+                  ),
                 ),
-              ),
-              Text(
-                'Backend engineer \u00B7 Sofia',
-                style: GoogleFonts.hankenGrotesk(
-                  fontSize: 13,
-                  color: jp.fgSecondary,
-                ),
-              ),
               const SizedBox(height: 18),
               Container(
                 padding: const EdgeInsets.all(12),
@@ -624,6 +715,16 @@ class _ScanViewState extends State<_ScanView> {
   }
 
   void _showResult(String url) {
+    // If it's a URL, open it directly
+    final uri = Uri.tryParse(url);
+    if (uri != null && (uri.scheme == 'http' || uri.scheme == 'https')) {
+      launchUrl(uri, mode: LaunchMode.externalApplication);
+      // Reset scanner after a short delay so it's ready when user comes back
+      Future.delayed(const Duration(milliseconds: 500), _resetScanner);
+      return;
+    }
+
+    // Non-URL QR code — show bottom sheet
     final jp = context.jp;
     showModalBottomSheet(
       context: context,

@@ -5,12 +5,23 @@ class SpeakerData {
   final String role;
   final String initials;
   final LinearGradient gradient;
+  final int? numericId;
+  final String? twitter;
+  final String? bsky;
+  String? bio;
 
-  const SpeakerData({
+  String? get imageUrl =>
+      numericId != null ? 'https://jprime.io/image/speaker/$numericId' : null;
+
+  SpeakerData({
     required this.name,
     required this.role,
     required this.initials,
     required this.gradient,
+    this.numericId,
+    this.twitter,
+    this.bsky,
+    this.bio,
   });
 }
 
@@ -28,22 +39,28 @@ class SessionData {
   final String room;
   final String start;
   final String end;
-  final String level;
+  String level;
   final String? speakerId;
+  final String? speakerName;
+  final String? coSpeakerName;
   final String abstract_;
   final bool isBreak;
+  final int day;
 
-  const SessionData({
+  SessionData({
     required this.id,
     required this.title,
     required this.trackId,
     required this.room,
     required this.start,
     required this.end,
-    required this.level,
+    this.level = '',
     this.speakerId,
+    this.speakerName,
+    this.coSpeakerName,
     this.abstract_ = '',
     this.isBreak = false,
+    this.day = 1,
   });
 
   int get startMin => toMin(start);
@@ -78,12 +95,35 @@ class SuggestionData {
 
 class JPData {
   static const tracks = {
-    'a': TrackData(id: 'a', label: 'Track A'),
-    'b': TrackData(id: 'b', label: 'Track B'),
+    'a': TrackData(id: 'a', label: 'Hall A'),
+    'b': TrackData(id: 'b', label: 'Hall B'),
     'workshop': TrackData(id: 'workshop', label: 'Workshop'),
   };
 
-  static final speakers = {
+  /// Number of conference days (updated from API).
+  static int totalDays = 1;
+
+  /// Actual conference dates (updated from API).
+  static List<DateTime> conferenceDates = [];
+
+  /// Returns the 1-based conference day for the given date, or 0 if not a conference day.
+  static int dayForDate(DateTime date) {
+    final d = DateTime(date.year, date.month, date.day);
+    for (int i = 0; i < conferenceDates.length; i++) {
+      if (conferenceDates[i] == d) return i + 1;
+    }
+    return 0;
+  }
+
+  /// Unique room names derived from sessions.
+  static List<String> get rooms => sessions
+      .where((s) => !s.isBreak)
+      .map((s) => s.room)
+      .toSet()
+      .toList()
+    ..sort();
+
+  static Map<String, SpeakerData> speakers = {
     'venkat': SpeakerData(
       name: 'Venkat Subramaniam',
       role: 'Agile Developer, Inc.',
@@ -146,7 +186,7 @@ class JPData {
     ),
   };
 
-  static const sessions = [
+  static List<SessionData> sessions = [
     SessionData(
       id: 's1',
       title: 'Opening keynote: The AI agents are among us',
@@ -255,7 +295,7 @@ class JPData {
     ),
   ];
 
-  static const suggestions = [
+  static List<SuggestionData> suggestions = [
     SuggestionData(sessionId: 's4', why: 'Matches your Kotlin & Spring interests'),
     SuggestionData(sessionId: 's8', why: 'Popular with people who starred Loom'),
     SuggestionData(sessionId: 's3', why: 'Fills your 10:00 gap on Day 1'),

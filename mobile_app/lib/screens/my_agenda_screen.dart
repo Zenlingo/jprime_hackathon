@@ -39,7 +39,9 @@ class _MyAgendaScreenState extends State<MyAgendaScreen> {
     final jp = context.jp;
 
     final suggestions = JPData.suggestions
-        .where((s) => !_accepted.contains(s.sessionId))
+        .where((s) =>
+            !_accepted.contains(s.sessionId) &&
+            JPData.sessionById(s.sessionId) != null)
         .map((s) => (suggestion: s, session: JPData.sessionById(s.sessionId)!))
         .toList();
 
