@@ -168,7 +168,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
               ...sessions.map((s) => Padding(
                     padding: const EdgeInsets.only(bottom: 12),
                     child: s.isBreak
-                        ? _BreakRow(session: s, nowMin: widget.nowMin)
+                        ? _BreakRow(session: s, nowMin: _effectiveNowMin)
                         : SessionCard(
                             session: s,
                             nowMin: _effectiveNowMin,
