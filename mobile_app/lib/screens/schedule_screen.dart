@@ -12,14 +12,18 @@ import '../widgets/empty_state.dart';
 
 class ScheduleScreen extends StatefulWidget {
   final int nowMin;
+  final int currentDay;
   final Set<String> favs;
+  final bool isActive;
   final void Function(String id) onToggleFav;
   final void Function(SessionData session) onOpenSession;
 
   const ScheduleScreen({
     super.key,
     required this.nowMin,
+    this.currentDay = 1,
     required this.favs,
+    this.isActive = false,
     required this.onToggleFav,
     required this.onOpenSession,
   });
@@ -29,14 +33,39 @@ class ScheduleScreen extends StatefulWidget {
 }
 
 class _ScheduleScreenState extends State<ScheduleScreen> {
-  int _day = 1;
+  late int _day = widget.currentDay.clamp(1, JPData.totalDays.clamp(1, 99));
+
+  /// Effective nowMin accounting for day: future day → all upcoming, past day → all finished.
+  int get _effectiveNowMin {
+    if (_day < widget.currentDay) return 9999; // past day — all finished
+    if (_day > widget.currentDay) return 0;    // future day — all upcoming
+    return widget.nowMin;                       // current day — real time
+  }
+
   String _query = '';
   String _filter = 'all';
   bool _showFilterSheet = false;
   final _searchController = TextEditingController();
   final _scrollKey = GlobalKey();
-  bool _didScrollWithData = false;
-  int _scrolledDay = 0;
+  bool _hasScrolled = false;
+  int _lastSessionCount = 0;
+
+  @override
+  void didUpdateWidget(covariant ScheduleScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final sessionCount = _filteredSessions.length;
+    // Scroll when tab becomes active, or when data first loads while active
+    final justActivated = widget.isActive && !oldWidget.isActive;
+    final dataJustLoaded =
+        widget.isActive && sessionCount > 0 && _lastSessionCount == 0;
+    _lastSessionCount = sessionCount;
+    if (justActivated || (dataJustLoaded && !_hasScrolled)) {
+      _hasScrolled = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _scrollToCurrentSlot();
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -79,18 +108,18 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     }
   }
 
-  /// Find the time key of the first slot that is live or upcoming (ignoring breaks).
+  /// Find the time key of the first slot that is live or upcoming.
   String? get _targetSlotKey {
     final grouped = _groupedBySlot;
-    // First try to find a live talk slot
+    // First: a live talk (not a break)
     for (final entry in grouped.entries) {
-      if (entry.value.any((s) => !s.isBreak && s.statusAt(widget.nowMin) == 'live')) {
+      if (entry.value.any((s) => !s.isBreak && s.statusAt(_effectiveNowMin) == 'live')) {
         return entry.key;
       }
     }
-    // Then the first upcoming talk slot
+    // Then the first upcoming slot (talks or breaks)
     for (final entry in grouped.entries) {
-      if (entry.value.any((s) => !s.isBreak && s.statusAt(widget.nowMin) == 'upcoming')) {
+      if (entry.value.any((s) => s.statusAt(_effectiveNowMin) == 'upcoming')) {
         return entry.key;
       }
     }
@@ -142,7 +171,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                         ? _BreakRow(session: s, nowMin: widget.nowMin)
                         : SessionCard(
                             session: s,
-                            nowMin: widget.nowMin,
+                            nowMin: _effectiveNowMin,
                             fav: widget.favs.contains(s.id),
                             onFav: () => widget.onToggleFav(s.id),
                             onTap: () => widget.onOpenSession(s),
@@ -152,16 +181,6 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           ),
         ),
       );
-    }
-
-    final needsScroll = targetKey != null &&
-        (!_didScrollWithData || _scrolledDay != _day);
-    if (needsScroll) {
-      _didScrollWithData = true;
-      _scrolledDay = _day;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _scrollToCurrentSlot();
-      });
     }
 
     return widgets;

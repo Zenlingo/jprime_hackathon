@@ -212,7 +212,9 @@ class _AppShellState extends State<AppShell> {
                     ),
                     ScheduleScreen(
                       nowMin: _nowMin,
+                      currentDay: _currentDay > 0 ? _currentDay : 1,
                       favs: _favs,
+                      isActive: _tabIndex == 1,
                       onToggleFav: (id) => _toggleFav(id),
                       onOpenSession: _openSession,
                     ),
