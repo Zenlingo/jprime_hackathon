@@ -30,7 +30,7 @@ class _AppShellState extends State<AppShell> {
   SessionData? _detailSession;
   SpeakerData? _detailSpeaker;
   String? _mapHighlight;
-  Set<String> _favs = {'s2', 's5'};
+  Set<String> _favs = {};
   bool _showOnboarding = false; // TEMP preview: skip onboarding
   // ignore: prefer_final_fields
   bool _offline = false;
@@ -70,9 +70,7 @@ class _AppShellState extends State<AppShell> {
     await JPrimeApi.loadSpeakers();
     final ok = await JPrimeApi.loadSchedule();
     if (mounted && ok) {
-      setState(() {
-        _favs = {};
-      });
+      setState(() {});
       // Load levels in background, refresh UI when done
       JPrimeApi.loadLevels().then((_) {
         if (mounted) setState(() {});
@@ -84,10 +82,12 @@ class _AppShellState extends State<AppShell> {
     final prefs = await SharedPreferences.getInstance();
     final url = prefs.getString('linkedin_url');
     final name = prefs.getString('display_name');
+    final savedFavs = prefs.getStringList('favs');
     if (mounted) {
       setState(() {
         _linkedInUrl = url;
         _displayName = name;
+        if (savedFavs != null) _favs = savedFavs.toSet();
       });
     }
   }
@@ -150,6 +150,12 @@ class _AppShellState extends State<AppShell> {
         _favs = {..._favs, id};
       }
     });
+    _saveFavs();
+  }
+
+  Future<void> _saveFavs() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList('favs', _favs.toList());
   }
 
   void _openSession(SessionData s) => setState(() => _detailSession = s);
@@ -220,6 +226,7 @@ class _AppShellState extends State<AppShell> {
                     ),
                     MyAgendaScreen(
                       nowMin: _nowMin,
+                      currentDay: _currentDay > 0 ? _currentDay : 1,
                       favs: _favs,
                       onToggleFav: (id, {forceOn = false}) =>
                           _toggleFav(id, forceOn: forceOn),
