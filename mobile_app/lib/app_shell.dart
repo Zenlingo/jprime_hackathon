@@ -26,12 +26,12 @@ class AppShell extends StatefulWidget {
 }
 
 class _AppShellState extends State<AppShell> {
-  int _tabIndex = 0;
+  int _tabIndex = 3; // TEMP preview: open on Map
   SessionData? _detailSession;
   SpeakerData? _detailSpeaker;
   String? _mapHighlight;
   Set<String> _favs = {'s2', 's5'};
-  bool _showOnboarding = true;
+  bool _showOnboarding = false; // TEMP preview: skip onboarding
   // ignore: prefer_final_fields
   bool _offline = false;
   String? _linkedInUrl;
