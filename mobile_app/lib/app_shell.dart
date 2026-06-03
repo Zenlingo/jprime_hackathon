@@ -26,12 +26,13 @@ class AppShell extends StatefulWidget {
 }
 
 class _AppShellState extends State<AppShell> {
-  int _tabIndex = 3; // TEMP preview: open on Map
+  int _tabIndex = 0;
   SessionData? _detailSession;
   SpeakerData? _detailSpeaker;
   String? _mapHighlight;
   Set<String> _favs = {};
-  bool _showOnboarding = false; // TEMP preview: skip onboarding
+  bool _showOnboarding = false;
+  bool _prefsLoaded = false;
   // ignore: prefer_final_fields
   bool _offline = false;
   String? _linkedInUrl;
@@ -83,11 +84,14 @@ class _AppShellState extends State<AppShell> {
     final url = prefs.getString('linkedin_url');
     final name = prefs.getString('display_name');
     final savedFavs = prefs.getStringList('favs');
+    final onboardingDone = prefs.getBool('onboarding_done') ?? false;
     if (mounted) {
       setState(() {
         _linkedInUrl = url;
         _displayName = name;
         if (savedFavs != null) _favs = savedFavs.toSet();
+        _showOnboarding = !onboardingDone;
+        _prefsLoaded = true;
       });
     }
   }
@@ -286,10 +290,12 @@ class _AppShellState extends State<AppShell> {
             ),
 
           // Onboarding overlay
-          if (_showOnboarding)
+          if (_prefsLoaded && _showOnboarding)
             OnboardingScreen(
-              onDone: (linkedInUrl) {
+              onDone: (linkedInUrl) async {
                 setState(() => _showOnboarding = false);
+                final prefs = await SharedPreferences.getInstance();
+                await prefs.setBool('onboarding_done', true);
                 if (linkedInUrl != null) {
                   _saveLinkedInUrl(linkedInUrl);
                 }
