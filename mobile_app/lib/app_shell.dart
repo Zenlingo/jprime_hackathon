@@ -40,9 +40,9 @@ class _AppShellState extends State<AppShell> {
   Timer? _clockTimer;
 
   // DEBUG: set to e.g. 10*60+30 to simulate 10:30, or null for real time
-  static const int? _debugNowMin = 900; // 15:00
+  static const int? _debugNowMin = null;
   // DEBUG: set to e.g. 1 or 2 to simulate a conference day, or null for real date
-  static const int? _debugDay = 1;
+  static const int? _debugDay = null;
 
   int get _nowMin => _debugNowMin ?? (DateTime.now().hour * 60 + DateTime.now().minute);
 
