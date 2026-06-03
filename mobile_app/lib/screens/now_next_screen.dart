@@ -22,7 +22,7 @@ class NowNextScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final rooms = ['Hall A', 'Room 4.1', 'Workshop Lab'];
+    final rooms = ['Hall A', 'Hall B', 'Workshop'];
     final pinned = ['Hall A'];
     final yours = rooms.where((r) => pinned.contains(r)).toList();
     final others = rooms.where((r) => !pinned.contains(r)).toList();
