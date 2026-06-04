@@ -83,6 +83,19 @@ class _SessionQASectionState extends State<SessionQASection> {
                   child: CircularProgressIndicator(color: jp.accent),
                 );
               }
+              if (snap.hasError) {
+                debugPrint('QA stream error: ${snap.error}');
+                return Center(
+                  child: Text(
+                    'Error loading questions:\n${snap.error}',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.hankenGrotesk(
+                      fontSize: 14,
+                      color: jp.danger,
+                    ),
+                  ),
+                );
+              }
               final questions = snap.data ?? [];
               if (questions.isEmpty) {
                 return Center(

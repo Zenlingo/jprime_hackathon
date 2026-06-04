@@ -53,6 +53,9 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
     final isLive = status == 'live';
     final sp = s.speakerId != null ? JPData.speakers[s.speakerId] : null;
 
+    // Session IDs from the API are numeric; sample/offline IDs start with 's'
+    final isOnline = int.tryParse(s.id) != null;
+
     return Scaffold(
       backgroundColor: jp.bg,
       body: Column(
@@ -66,26 +69,27 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
               size: 24,
             ),
           ),
-          // Segmented control
-          Padding(
-            padding: const EdgeInsets.fromLTRB(18, 8, 18, 4),
-            child: Container(
-              padding: const EdgeInsets.all(3),
-              decoration: BoxDecoration(
-                color: jp.surfaceSunken,
-                borderRadius: BorderRadius.circular(JPSpacing.rSm),
-              ),
-              child: Row(
-                children: [
-                  _SegTab(label: 'Info', active: _tabIndex == 0,
-                    onTap: () => setState(() => _tabIndex = 0)),
-                  _SegTab(label: 'Q&A', active: _tabIndex == 1,
-                    onTap: () => setState(() => _tabIndex = 1)),
-                ],
+          // Segmented control (only when online)
+          if (isOnline)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(18, 8, 18, 4),
+              child: Container(
+                padding: const EdgeInsets.all(3),
+                decoration: BoxDecoration(
+                  color: jp.surfaceSunken,
+                  borderRadius: BorderRadius.circular(JPSpacing.rSm),
+                ),
+                child: Row(
+                  children: [
+                    _SegTab(label: 'Info', active: _tabIndex == 0,
+                      onTap: () => setState(() => _tabIndex = 0)),
+                    _SegTab(label: 'Q&A', active: _tabIndex == 1,
+                      onTap: () => setState(() => _tabIndex = 1)),
+                  ],
+                ),
               ),
             ),
-          ),
-          if (_tabIndex == 1) ...[
+          if (_tabIndex == 1 && isOnline) ...[
             Expanded(
               child: SessionQASection(
                 sessionId: s.id,

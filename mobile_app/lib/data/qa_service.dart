@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
@@ -42,14 +43,35 @@ class QAService {
   static final _db = FirebaseFirestore.instance;
   static const _collection = 'questions';
 
+  /// Call once at startup to verify Firestore server connectivity.
+  static Future<void> checkConnectivity() async {
+    try {
+      final snap = await _db
+          .collection(_collection)
+          .limit(1)
+          .get(const GetOptions(source: Source.server));
+      debugPrint('[QA] Server connectivity OK, ${snap.docs.length} docs');
+    } catch (e) {
+      debugPrint('[QA] Server connectivity FAILED: $e');
+    }
+  }
+
   static Stream<List<Question>> questionsStream(String sessionId) {
+    debugPrint('[QA] Subscribing to questions for sessionId: "$sessionId"');
     return _db
         .collection(_collection)
         .where('sessionId', isEqualTo: sessionId)
-        .orderBy('upvotes', descending: true)
-        .orderBy('timestamp', descending: false)
-        .snapshots()
-        .map((snap) => snap.docs.map(Question.fromDoc).toList());
+        .snapshots(includeMetadataChanges: true)
+        .map((snap) {
+      debugPrint('[QA] Snapshot: ${snap.docs.length} docs, fromCache=${snap.metadata.isFromCache}');
+      final list = snap.docs.map(Question.fromDoc).toList();
+      list.sort((a, b) {
+        final cmp = b.upvotes.compareTo(a.upvotes);
+        if (cmp != 0) return cmp;
+        return a.timestamp.compareTo(b.timestamp);
+      });
+      return list;
+    });
   }
 
   static Future<void> postQuestion(
