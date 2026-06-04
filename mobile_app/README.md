@@ -29,21 +29,38 @@ That's it — the app should be running on your connected device or emulator.
 ### Android
 
 ```bash
-flutter run                # connected device or emulator
+# List available devices and emulators
+flutter devices
+
+# Launch an Android emulator (if not already running)
+flutter emulators --launch <emulator_name>
+
+# Run the app
+flutter run
 ```
 
 Requires: Android Studio, SDK API 34+, JDK 17.
 
+> **Tip:** Open Android Studio → Device Manager → Create/Start a virtual device if you don't have one.
+
 ### iOS (macOS only)
 
 ```bash
+# Install iOS dependencies (first time only)
 cd ios && pod install && cd ..
+
+# Launch iOS Simulator
+open -a Simulator
+
+# Run the app
 flutter run
 ```
 
 Requires: Xcode 15+, CocoaPods.
 
-### Windows / macOS
+> **Tip:** You can also pick a specific simulator: `flutter run -d "iPhone 16"`
+
+### Windows / macOS (desktop)
 
 ```bash
 flutter run -d windows
