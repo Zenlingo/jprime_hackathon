@@ -9,51 +9,30 @@ A Flutter mobile app for the [jPrime](https://jprime.io) conference — real-tim
   <img src="app-screenshots/dark_mode.png" width="180" />
 </p>
 
-## Prerequisites
+## Quick Start
 
-- **Flutter SDK** `>=3.11.3` — [Install Flutter](https://docs.flutter.dev/get-started/install)
-- **Firebase project** configured (`google-services.json` / `GoogleService-Info.plist` already included)
-
-### Android / Windows
-
-| Tool | Version |
-|------|---------|
-| Android Studio | Latest stable |
-| Android SDK | API 34+ |
-| Java JDK | 17 |
-
-### macOS / iOS
-
-| Tool | Version |
-|------|---------|
-| Xcode | 15+ |
-| CocoaPods | Latest (`sudo gem install cocoapods`) |
-| iOS deployment target | 16.0 |
-
-## Getting Started
+> **Only prerequisite:** [Flutter SDK](https://docs.flutter.dev/get-started/install) `>=3.11.3`
+>
+> Firebase, API keys, and all config files are **already included** — no extra setup needed.
 
 ```bash
-# 1. Clone the repo
 git clone https://github.com/Zenlingo/jprime_hackathon.git
 cd jprime_hackathon/mobile_app
-
-# 2. Install dependencies
 flutter pub get
-
-# 3. Verify your environment
-flutter doctor
+flutter run
 ```
 
-## Running the App
+That's it — the app should be running on your connected device or emulator.
+
+## Platform-Specific Notes
 
 ### Android
 
 ```bash
-flutter devices        # List available devices/emulators
-flutter run            # Run on connected device or emulator
+flutter run                # connected device or emulator
 ```
 
-Or open the project in **Android Studio**, select a device, and press **Run**.
+Requires: Android Studio, SDK API 34+, JDK 17.
 
 ### iOS (macOS only)
 
@@ -62,7 +41,7 @@ cd ios && pod install && cd ..
 flutter run
 ```
 
-Or open `ios/Runner.xcworkspace` in **Xcode**, select a simulator/device, and press **Run**.
+Requires: Xcode 15+, CocoaPods.
 
 ### Windows / macOS
 
@@ -73,36 +52,28 @@ flutter run -d macos
 
 ## Building Release Versions
 
-### Android APK
-
 ```bash
+# Android APK
 flutter build apk --release
-# Output: build/app/outputs/flutter-apk/app-release.apk
-```
 
-### Android App Bundle (Play Store)
-
-```bash
+# Android App Bundle (Play Store)
 flutter build appbundle --release
-# Output: build/app/outputs/bundle/release/app-release.aab
-```
 
-### iOS (requires Apple Developer account)
-
-```bash
+# iOS (requires Apple Developer account)
 flutter build ipa --release
-# Output: build/ios/ipa/*.ipa
 ```
 
 ## Troubleshooting
 
-- **`flutter doctor` shows issues** — follow the suggested fixes for your platform.
-- **iOS pod errors** — run `cd ios && pod install --repo-update && cd ..`
-- **Android build fails** — ensure `JAVA_HOME` points to JDK 17 and Android SDK is up to date.
-- **Firebase errors** — verify `android/app/google-services.json` and `ios/Runner/GoogleService-Info.plist` exist.
-- **Camera/location not working** — check device permissions; the app requests them at runtime via `permission_handler`.
-- **Notifications not appearing** — on Android 13+ the app needs POST_NOTIFICATIONS permission; on iOS allow notifications when prompted.
+| Problem | Fix |
+|---------|-----|
+| `flutter doctor` shows issues | Follow the suggested fixes for your platform |
+| iOS pod errors | `cd ios && pod install --repo-update && cd ..` |
+| Android build fails | Ensure `JAVA_HOME` points to JDK 17 and Android SDK is up to date |
+| Firebase errors | Config files are included in the repo — verify they haven't been accidentally deleted |
+| Camera/location not working | Check device permissions; the app requests them at runtime |
+| Notifications not appearing | Android 13+ needs POST_NOTIFICATIONS permission; iOS — allow when prompted |
 
 ---
 
-For technical details see [TECH_STACK.md](TECH_STACK.md).
+For architecture, tech stack, and project structure see [TECH_STACK.md](TECH_STACK.md).

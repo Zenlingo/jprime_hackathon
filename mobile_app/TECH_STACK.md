@@ -177,13 +177,14 @@ flutter test --coverage
 
 ## Firebase Setup
 
-The app uses Firebase Firestore for the live Q&A feature. Configuration files are already included:
+The app uses Firebase Firestore for the live Q&A feature. **Firebase is pre-configured** — all config files are included in the repo, so no Firebase setup is needed to run the app.
 
+Included config files:
 - **Android**: `android/app/google-services.json`
 - **iOS**: `ios/Runner/GoogleService-Info.plist`
 - **Dart config**: `lib/firebase_options.dart`
 
-To use your own Firebase project, replace these files and update `firebase_options.dart` using [FlutterFire CLI](https://firebase.flutter.dev/docs/cli/).
+> **Want to use your own Firebase project?** Replace the files above and regenerate `firebase_options.dart` using [FlutterFire CLI](https://firebase.flutter.dev/docs/cli/).
 
 ### Firestore Data Model
 
