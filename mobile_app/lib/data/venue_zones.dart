@@ -59,3 +59,12 @@ const venueZones = <VenueZone>[
     LatLng(42.666731, 23.373897),
   ]),
 ];
+
+/// Outer footprint of the whole venue. Inside this but not in any zone means
+/// "at the venue, between buildings"; outside means "not at the venue".
+const venueBoundary = <LatLng>[
+  LatLng(42.666509, 23.377449),
+  LatLng(42.664688, 23.375167),
+  LatLng(42.667074, 23.371600),
+  LatLng(42.668820, 23.374198),
+];

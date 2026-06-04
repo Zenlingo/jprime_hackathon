@@ -71,7 +71,8 @@ class _MapScreenState extends State<MapScreen> {
       // Are we standing inside any zone's footprint?
       VenueZone? inZone;
       for (final z in venueZones) {
-        if (z.hasPolygon && _pointInZone(pos.latitude, pos.longitude, z)) {
+        if (z.hasPolygon &&
+            _pointInPolygon(pos.latitude, pos.longitude, z.polygon)) {
           inZone = z;
           break;
         }
@@ -83,21 +84,13 @@ class _MapScreenState extends State<MapScreen> {
         });
         return;
       }
-      // Not inside any rectangle — how far is the nearest one?
-      double nearest = double.infinity;
-      for (final z in venueZones) {
-        if (!z.hasPolygon) continue;
-        final d = Geolocator.distanceBetween(
-            pos.latitude, pos.longitude, z.centroidLat, z.centroidLng);
-        if (d < nearest) nearest = d;
-      }
-      if (nearest > 120) {
-        _failLocate(
-            "You don't seem to be at the venue yet (~${nearest.round()}m from "
-            "the nearest zone). Pick your spot if you're already inside.");
-      } else {
+      // Not inside any zone — are we at least within the venue grounds?
+      if (_pointInPolygon(pos.latitude, pos.longitude, venueBoundary)) {
         _failLocate("You're at the venue but not inside a mapped area "
             "(maybe between buildings). Pick your spot.");
+      } else {
+        _failLocate("You don't seem to be at the venue yet. "
+            "Pick your spot if you're already inside.");
       }
     } catch (_) {
       _failLocate('Could not read your location. Pick your spot instead.');
@@ -105,11 +98,12 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   /// Ray-casting point-in-polygon. Corners are first ordered around the centroid
-  /// so the input corner order doesn't matter for these convex zone rectangles.
-  bool _pointInZone(double lat, double lng, VenueZone z) {
-    final pts = [...z.polygon];
-    final cLat = z.centroidLat;
-    final cLng = z.centroidLng;
+  /// so the input corner order doesn't matter for these convex rectangles.
+  bool _pointInPolygon(double lat, double lng, List<LatLng> poly) {
+    if (poly.length < 3) return false;
+    final pts = [...poly];
+    final cLat = pts.map((p) => p.lat).reduce((a, b) => a + b) / pts.length;
+    final cLng = pts.map((p) => p.lng).reduce((a, b) => a + b) / pts.length;
     pts.sort((a, b) => math
         .atan2(a.lat - cLat, a.lng - cLng)
         .compareTo(math.atan2(b.lat - cLat, b.lng - cLng)));
