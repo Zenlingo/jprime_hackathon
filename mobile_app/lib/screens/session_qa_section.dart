@@ -22,7 +22,6 @@ class _SessionQASectionState extends State<SessionQASection> {
   final _controller = TextEditingController();
   late final Stream<List<Question>> _questionsStream;
   String? _deviceId;
-  bool _sending = false;
 
   @override
   void initState() {
@@ -36,21 +35,16 @@ class _SessionQASectionState extends State<SessionQASection> {
     if (mounted) setState(() => _deviceId = id);
   }
 
-  Future<void> _send() async {
+  void _send() {
     final text = _controller.text.trim();
     if (text.isEmpty || _deviceId == null) return;
-    setState(() => _sending = true);
-    try {
-      await QAService.postQuestion(
-        widget.sessionId,
-        text,
-        widget.displayName ?? 'Anonymous',
-        _deviceId!,
-      );
-      _controller.clear();
-    } finally {
-      if (mounted) setState(() => _sending = false);
-    }
+    _controller.clear();
+    QAService.postQuestion(
+      widget.sessionId,
+      text,
+      widget.displayName ?? 'Anonymous',
+      _deviceId!,
+    );
   }
 
   Future<void> _toggleUpvote(String questionId) async {
@@ -190,7 +184,7 @@ class _SessionQASectionState extends State<SessionQASection> {
                 ),
                 const SizedBox(width: 8),
                 GestureDetector(
-                  onTap: _sending ? null : _send,
+                  onTap: _send,
                   child: Container(
                     width: 42,
                     height: 42,
@@ -199,16 +193,7 @@ class _SessionQASectionState extends State<SessionQASection> {
                       borderRadius: BorderRadius.circular(JPSpacing.rMd),
                     ),
                     child: Center(
-                      child: _sending
-                          ? SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: jp.onAccent,
-                              ),
-                            )
-                          : PhosphorIcon(
+                      child: PhosphorIcon(
                               PhosphorIconsFill.paperPlaneTilt,
                               size: 20,
                               color: jp.onAccent,
