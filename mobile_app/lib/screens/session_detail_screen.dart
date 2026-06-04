@@ -13,6 +13,7 @@ import '../widgets/fav_star.dart';
 import '../widgets/section_label.dart';
 import '../widgets/jp_switch.dart';
 import '../widgets/jp_button.dart';
+import 'session_qa_section.dart';
 
 class SessionDetailScreen extends StatefulWidget {
   final SessionData session;
@@ -22,6 +23,7 @@ class SessionDetailScreen extends StatefulWidget {
   final VoidCallback onClose;
   final void Function(SessionData session) onFindRoom;
   final void Function(SpeakerData speaker)? onOpenSpeaker;
+  final String? displayName;
 
   const SessionDetailScreen({
     super.key,
@@ -32,6 +34,7 @@ class SessionDetailScreen extends StatefulWidget {
     required this.onClose,
     required this.onFindRoom,
     this.onOpenSpeaker,
+    this.displayName,
   });
 
   @override
@@ -40,6 +43,7 @@ class SessionDetailScreen extends StatefulWidget {
 
 class _SessionDetailScreenState extends State<SessionDetailScreen> {
   bool _remind = false;
+  int _tabIndex = 0; // 0 = Info, 1 = Q&A
 
   @override
   Widget build(BuildContext context) {
@@ -62,6 +66,33 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
               size: 24,
             ),
           ),
+          // Segmented control
+          Padding(
+            padding: const EdgeInsets.fromLTRB(18, 8, 18, 4),
+            child: Container(
+              padding: const EdgeInsets.all(3),
+              decoration: BoxDecoration(
+                color: jp.surfaceSunken,
+                borderRadius: BorderRadius.circular(JPSpacing.rSm),
+              ),
+              child: Row(
+                children: [
+                  _SegTab(label: 'Info', active: _tabIndex == 0,
+                    onTap: () => setState(() => _tabIndex = 0)),
+                  _SegTab(label: 'Q&A', active: _tabIndex == 1,
+                    onTap: () => setState(() => _tabIndex = 1)),
+                ],
+              ),
+            ),
+          ),
+          if (_tabIndex == 1) ...[
+            Expanded(
+              child: SessionQASection(
+                sessionId: s.id,
+                displayName: widget.displayName,
+              ),
+            ),
+          ] else ...[
           Expanded(
             child: ListView(
               padding: const EdgeInsets.fromLTRB(18, 16, 18, 110),
@@ -274,7 +305,46 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
               ),
             ),
           ),
+          ], // end else (Info tab)
         ],
+      ),
+    );
+  }
+}
+
+class _SegTab extends StatelessWidget {
+  final String label;
+  final bool active;
+  final VoidCallback onTap;
+
+  const _SegTab({required this.label, required this.active, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final jp = context.jp;
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          decoration: BoxDecoration(
+            color: active ? jp.surface : Colors.transparent,
+            borderRadius: BorderRadius.circular(JPSpacing.rXs),
+            boxShadow: active
+                ? [BoxShadow(color: jp.border, blurRadius: 2, offset: const Offset(0, 1))]
+                : null,
+          ),
+          child: Center(
+            child: Text(
+              label,
+              style: GoogleFonts.spaceGrotesk(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: active ? jp.fg : jp.fgMuted,
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
