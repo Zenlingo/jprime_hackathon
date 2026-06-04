@@ -24,6 +24,8 @@ class SessionDetailScreen extends StatefulWidget {
   final void Function(SessionData session) onFindRoom;
   final void Function(SpeakerData speaker)? onOpenSpeaker;
   final String? displayName;
+  final bool remind;
+  final VoidCallback onRemind;
 
   const SessionDetailScreen({
     super.key,
@@ -35,6 +37,8 @@ class SessionDetailScreen extends StatefulWidget {
     required this.onFindRoom,
     this.onOpenSpeaker,
     this.displayName,
+    this.remind = false,
+    required this.onRemind,
   });
 
   @override
@@ -42,7 +46,6 @@ class SessionDetailScreen extends StatefulWidget {
 }
 
 class _SessionDetailScreenState extends State<SessionDetailScreen> {
-  bool _remind = false;
   int _tabIndex = 0; // 0 = Info, 1 = Q&A
 
   @override
@@ -252,11 +255,11 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
                   child: Row(
                     children: [
                       PhosphorIcon(
-                        _remind
+                        widget.remind
                             ? PhosphorIconsFill.bell
                             : PhosphorIconsRegular.bell,
                         size: 20,
-                        color: _remind ? jp.accent : jp.fgSecondary,
+                        color: widget.remind ? jp.accent : jp.fgSecondary,
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -270,9 +273,8 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
                         ),
                       ),
                       JPSwitch(
-                        value: _remind,
-                        onToggle: () =>
-                            setState(() => _remind = !_remind),
+                        value: widget.remind,
+                        onToggle: widget.onRemind,
                       ),
                     ],
                   ),
