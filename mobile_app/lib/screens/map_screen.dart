@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -32,10 +33,14 @@ class _MapScreenState extends State<MapScreen> {
   String? _selectedRoom;
 
   // "You are here" detection
-  String? _youAreHere; // zone id of detected location
-  String? _youAreHereLabel;
+  String? _youAreHereLabel; // name of the zone you're currently in
   bool _locating = false;
   String? _locError; // non-null when GPS failed → show manual fallback
+
+  // Live GPS tracking: the dot follows you in real time.
+  StreamSubscription<Position>? _posSub;
+  bool _liveOn = false;
+  String? _liveStatus; // banner subtitle when you're not in a named zone
 
   // Live position, projected into the schematic's 0..1 coordinate space.
   Offset? _meDot;
@@ -85,6 +90,13 @@ class _MapScreenState extends State<MapScreen> {
   void initState() {
     super.initState();
     _selectedRoom = widget.highlight;
+    _startLive(); // begin real-time tracking as soon as the map opens
+  }
+
+  @override
+  void dispose() {
+    _posSub?.cancel();
+    super.dispose();
   }
 
   @override
@@ -95,8 +107,8 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 
-  /// Use GPS to detect which venue zone the attendee is standing inside.
-  Future<void> _locate() async {
+  /// Start streaming GPS so the dot tracks the attendee in real time.
+  Future<void> _startLive() async {
     setState(() {
       _locating = true;
       _locError = null;
@@ -117,51 +129,76 @@ class _MapScreenState extends State<MapScreen> {
         _failLocate('Location permission denied. Pick your spot instead.');
         return;
       }
-      final pos = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
-        ),
-      );
-      // Are we standing inside any zone's footprint?
-      VenueZone? inZone;
-      for (final z in venueZones) {
-        if (z.hasPolygon &&
-            _pointInPolygon(pos.latitude, pos.longitude, z.polygon)) {
-          inZone = z;
-          break;
-        }
+      await _posSub?.cancel();
+      _posSub =
+          Geolocator.getPositionStream(
+            locationSettings: const LocationSettings(
+              accuracy: LocationAccuracy.high,
+              distanceFilter: 1, // emit after ~1m of movement
+            ),
+          ).listen(
+            _applyPosition,
+            onError: (_) {
+              if (!mounted) return;
+              setState(() => _liveStatus = 'Signal lost — reconnecting…');
+            },
+          );
+      if (mounted) setState(() => _liveOn = true);
+    } catch (_) {
+      _failLocate('Could not read your location. Pick your spot instead.');
+    }
+  }
+
+  /// Apply one live GPS fix: move the dot and update the status banner.
+  void _applyPosition(Position pos) {
+    if (!mounted) return;
+    VenueZone? inZone;
+    for (final z in venueZones) {
+      if (z.hasPolygon &&
+          _pointInPolygon(pos.latitude, pos.longitude, z.polygon)) {
+        inZone = z;
+        break;
       }
-      // If we're anywhere on the venue grounds, drop a dot.
-      final atVenue =
-          inZone != null ||
-          _pointInPolygon(pos.latitude, pos.longitude, venueBoundary);
+    }
+    final atVenue =
+        inZone != null ||
+        _pointInPolygon(pos.latitude, pos.longitude, venueBoundary);
+    setState(() {
+      _locating = false;
+      _locError = null;
       if (atVenue) {
         _meDot = _projectMe(inZone, pos.latitude, pos.longitude);
         _meAccM = pos.accuracy;
         _meApprox = inZone == null; // between buildings → rough placement
-      }
-      if (inZone != null) {
-        setState(() {
-          _locating = false;
-          _setHere(inZone!.id, inZone.label);
-        });
-        return;
-      }
-      // Not inside any zone — are we at least within the venue grounds?
-      if (atVenue) {
-        _failLocate(
-          "You're at the venue but not inside a mapped area "
-          "(maybe between buildings). Your dot is on the map.",
-        );
+        if (inZone != null) {
+          _setHere(inZone.id, inZone.label);
+          _liveStatus = null;
+        } else {
+          _youAreHereLabel = null;
+          _liveStatus = 'On the venue grounds';
+        }
       } else {
-        _failLocate(
-          "You don't seem to be at the venue yet. "
-          "Pick your spot if you're already inside.",
-        );
+        _meDot = null;
+        _meAccM = null;
+        _meApprox = false;
+        _youAreHereLabel = null;
+        _liveStatus = "You're not at the venue yet";
       }
-    } catch (_) {
-      _failLocate('Could not read your location. Pick your spot instead.');
-    }
+    });
+  }
+
+  /// Stop live tracking and clear the dot.
+  void _stopLive() {
+    _posSub?.cancel();
+    _posSub = null;
+    setState(() {
+      _liveOn = false;
+      _liveStatus = null;
+      _meDot = null;
+      _meAccM = null;
+      _meApprox = false;
+      _youAreHereLabel = null;
+    });
   }
 
   /// Ray-casting point-in-polygon. Corners are first ordered around the centroid
@@ -322,7 +359,6 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   void _setHere(String id, String label) {
-    _youAreHere = id;
     _youAreHereLabel = label;
     _locError = null;
     // Highlight the matching box, if this zone is a room (not the Food POI).
@@ -497,20 +533,14 @@ class _MapScreenState extends State<MapScreen> {
             Padding(
               padding: const EdgeInsets.fromLTRB(18, 12, 18, 0),
               child: _LocateBar(
-                here: _youAreHere,
+                live: _liveOn,
                 hereLabel: _youAreHereLabel,
+                status: _liveStatus,
                 locating: _locating,
                 error: _locError,
-                onLocate: _locate,
+                onEnable: _startLive,
+                onStop: _stopLive,
                 onCapture: _captureHere,
-                onClear: () => setState(() {
-                  _youAreHere = null;
-                  _youAreHereLabel = null;
-                  _locError = null;
-                  _meDot = null;
-                  _meAccM = null;
-                  _meApprox = false;
-                }),
                 onPickManual: (z) => setState(() => _setHere(z.id, z.label)),
               ),
             ),
@@ -708,23 +738,25 @@ class _POI {
 /// "You are here" control: a Locate button that snaps to the nearest GPS zone,
 /// a result banner once located, and a manual zone picker when GPS is weak.
 class _LocateBar extends StatelessWidget {
-  final String? here;
-  final String? hereLabel;
+  final bool live; // real-time tracking active
+  final String? hereLabel; // name of the zone you're in, if any
+  final String? status; // generic status when not in a named zone
   final bool locating;
   final String? error;
-  final VoidCallback onLocate;
+  final VoidCallback onEnable;
+  final VoidCallback onStop;
   final VoidCallback onCapture;
-  final VoidCallback onClear;
   final void Function(VenueZone) onPickManual;
 
   const _LocateBar({
-    required this.here,
+    required this.live,
     required this.hereLabel,
+    required this.status,
     required this.locating,
     required this.error,
-    required this.onLocate,
+    required this.onEnable,
+    required this.onStop,
     required this.onCapture,
-    required this.onClear,
     required this.onPickManual,
   });
 
@@ -734,8 +766,8 @@ class _LocateBar extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (here != null)
-          // Result banner
+        if (live || locating)
+          // Live status banner — updates in real time as you move.
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             decoration: BoxDecoration(
@@ -746,7 +778,7 @@ class _LocateBar extends StatelessWidget {
             child: Row(
               children: [
                 PhosphorIcon(
-                  PhosphorIconsFill.mapPin,
+                  PhosphorIconsFill.navigationArrow,
                   size: 18,
                   color: jp.accent,
                 ),
@@ -755,18 +787,33 @@ class _LocateBar extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'You are here',
-                        style: GoogleFonts.jetBrainsMono(
-                          fontSize: 9,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 1.0,
-                          color: jp.accent,
-                        ),
+                      Row(
+                        children: [
+                          Container(
+                            width: 8,
+                            height: 8,
+                            decoration: const BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Color(0xFF22C55E),
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            hereLabel != null ? 'LIVE · YOU ARE HERE' : 'LIVE',
+                            style: GoogleFonts.jetBrainsMono(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 1.0,
+                              color: jp.accent,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 1),
+                      const SizedBox(height: 2),
                       Text(
-                        '$hereLabel',
+                        hereLabel ??
+                            status ??
+                            (locating ? 'Finding you…' : 'Tracking…'),
                         style: GoogleFonts.spaceGrotesk(
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
@@ -777,7 +824,7 @@ class _LocateBar extends StatelessWidget {
                   ),
                 ),
                 GestureDetector(
-                  onTap: onClear,
+                  onTap: onStop,
                   child: PhosphorIcon(
                     PhosphorIconsRegular.x,
                     size: 16,
@@ -788,10 +835,10 @@ class _LocateBar extends StatelessWidget {
             ),
           )
         else
-          // Locate button (long-press to capture a coordinate)
+          // Enable button (long-press to capture a coordinate for dev use)
           GestureDetector(
-            onTap: locating ? null : onLocate,
-            onLongPress: locating ? null : onCapture,
+            onTap: onEnable,
+            onLongPress: onCapture,
             child: Container(
               padding: const EdgeInsets.symmetric(vertical: 13),
               decoration: BoxDecoration(
@@ -802,24 +849,14 @@ class _LocateBar extends StatelessWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  if (locating)
-                    SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: jp.onAccent,
-                      ),
-                    )
-                  else
-                    PhosphorIcon(
-                      PhosphorIconsFill.navigationArrow,
-                      size: 17,
-                      color: jp.onAccent,
-                    ),
+                  PhosphorIcon(
+                    PhosphorIconsFill.navigationArrow,
+                    size: 17,
+                    color: jp.onAccent,
+                  ),
                   const SizedBox(width: 9),
                   Text(
-                    locating ? 'Locating…' : 'Locate me on the map',
+                    'Turn on live location',
                     style: GoogleFonts.spaceGrotesk(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
