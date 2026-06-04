@@ -81,7 +81,8 @@ class _SessionQASectionState extends State<SessionQASection> {
           child: StreamBuilder<List<Question>>(
             stream: QAService.questionsStream(widget.sessionId),
             builder: (context, snap) {
-              if (snap.connectionState == ConnectionState.waiting) {
+              if (snap.connectionState == ConnectionState.waiting &&
+                  !snap.hasData) {
                 return Center(
                   child: CircularProgressIndicator(color: jp.accent),
                 );
