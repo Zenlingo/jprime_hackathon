@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'sample_data.dart';
 
 class JPrimeApi {
@@ -13,6 +14,7 @@ class JPrimeApi {
   static final Map<String, _ScrapedSpeaker> _speakerDirectory = {};
 
   /// Fetches sessions from all halls and populates JPData.
+  /// Caches raw JSON to SharedPreferences; falls back to cache when offline.
   static Future<bool> loadSchedule() async {
     try {
       final allRaw = <Map<String, dynamic>>[];
@@ -37,9 +39,44 @@ class JPrimeApi {
         } catch (_) {}
       }
 
-      if (allRaw.isEmpty) return false;
+      if (allRaw.isEmpty) {
+        // Offline — try loading from cache
+        return _loadScheduleFromCache();
+      }
 
-      // Determine conference days from unique dates
+      // Cache the raw data for offline use
+      _cacheSchedule(allRaw);
+
+      _applyScheduleData(allRaw);
+      return true;
+    } catch (_) {
+      return _loadScheduleFromCache();
+    }
+  }
+
+  static Future<bool> _loadScheduleFromCache() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final cached = prefs.getString('cached_schedule');
+      if (cached == null) return false;
+      final List<dynamic> data = json.decode(cached);
+      final allRaw = data.cast<Map<String, dynamic>>();
+      if (allRaw.isEmpty) return false;
+      _applyScheduleData(allRaw);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  static Future<void> _cacheSchedule(List<Map<String, dynamic>> allRaw) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('cached_schedule', json.encode(allRaw));
+    } catch (_) {}
+  }
+
+  static void _applyScheduleData(List<Map<String, dynamic>> allRaw) {
       final dates = allRaw
           .map((item) => DateTime.parse(item['startTime'] as String))
           .map((dt) => DateTime(dt.year, dt.month, dt.day))
@@ -108,20 +145,29 @@ class JPrimeApi {
       JPData.suggestions = [];
       JPData.totalDays = dates.length.clamp(1, 3);
       JPData.conferenceDates = dates;
-      return true;
-    } catch (_) {
-      return false;
-    }
   }
 
   /// Scrapes /speakers HTML page to get IDs, headlines, twitter handles.
-  /// Then enriches JPData.speakers with this data.
+  /// Caches HTML; falls back to cache when offline.
   static Future<void> loadSpeakers() async {
     try {
-      final html = await _get('$baseUrl/speakers');
+      var html = await _get('$baseUrl/speakers');
+      if (html != null) {
+        // Cache for offline
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('cached_speakers_html', html);
+      } else {
+        // Offline — try cache
+        final prefs = await SharedPreferences.getInstance();
+        html = prefs.getString('cached_speakers_html');
+      }
       if (html == null) return;
 
-      // Extract speaker entries: image ID + name + headline in sequence
+      _applySpeakersHtml(html);
+    } catch (_) {}
+  }
+
+  static void _applySpeakersHtml(String html) {
       final entryRegex = RegExp(
         r'src="/image/speaker/(\d+)"(.*?)<h3><a href="/speaker/\d+">(.+?)</a></h3>\s*<p>(.*?)</p>',
         dotAll: true,
@@ -132,7 +178,7 @@ class JPrimeApi {
 
       for (final match in entryRegex.allMatches(html)) {
         final numericId = int.parse(match.group(1)!);
-        final betweenText = match.group(2)!; // text between img and h3
+        final betweenText = match.group(2)!;
         final rawName = match
             .group(3)!
             .replaceAll('&nbsp;', ' ')
@@ -172,12 +218,27 @@ class JPrimeApi {
           );
         }
       }
-    } catch (_) {}
   }
 
   /// Scrapes talk levels from /agenda/{id} pages in parallel.
+  /// Caches levels to SharedPreferences for offline use.
   static Future<void> loadLevels() async {
     try {
+      final prefs = await SharedPreferences.getInstance();
+
+      // First, apply any cached levels
+      final cachedLevels = prefs.getString('cached_levels');
+      Map<String, String> levelMap = {};
+      if (cachedLevels != null) {
+        levelMap = Map<String, String>.from(json.decode(cachedLevels));
+        for (final s in JPData.sessions) {
+          if (s.level.isEmpty && levelMap.containsKey(s.id)) {
+            s.level = levelMap[s.id]!;
+          }
+        }
+      }
+
+      // Then fetch fresh levels from the web
       final sessions =
           JPData.sessions.where((s) => !s.isBreak && s.level.isEmpty).toList();
       if (sessions.isEmpty) return;
@@ -187,7 +248,7 @@ class JPrimeApi {
         caseSensitive: false,
       );
 
-      // Fetch up to 10 at a time to avoid overwhelming the server
+      bool anyNew = false;
       const batchSize = 10;
       for (int i = 0; i < sessions.length; i += batchSize) {
         final batch = sessions.skip(i).take(batchSize);
@@ -198,9 +259,16 @@ class JPrimeApi {
             final match = levelRegex.firstMatch(html);
             if (match != null) {
               s.level = _normalizeLevel(match.group(1));
+              levelMap[s.id] = s.level;
+              anyNew = true;
             }
           } catch (_) {}
         }));
+      }
+
+      // Save updated levels to cache
+      if (anyNew) {
+        await prefs.setString('cached_levels', json.encode(levelMap));
       }
     } catch (_) {}
   }
