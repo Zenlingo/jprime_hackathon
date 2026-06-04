@@ -280,6 +280,7 @@ class _AppShellState extends State<AppShell> {
               onClose: () => setState(() => _detailSession = null),
               onFindRoom: _findRoom,
               onOpenSpeaker: _openSpeaker,
+              displayName: _displayName,
             ),
 
           // Speaker detail overlay

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "224287421928",
+    "project_id": "jprime-hackathon",
+    "storage_bucket": "jprime-hackathon.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:224287421928:android:47948db1bca3c86ce0205d",
+        "android_client_info": {
+          "package_name": "com.jprime.mobile_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAWyd_my7B9_x4nVVreDpyYlD8FsMDKAIM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
