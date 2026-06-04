@@ -19,9 +19,8 @@ class OnboardingScreen extends StatefulWidget {
 class _OnboardingScreenState extends State<OnboardingScreen> {
   int _step = 0;
   String? _role;
-  final Set<String> _topics = {};
   final _linkedInController = TextEditingController();
-  static const _totalSteps = 5;
+  static const _totalSteps = 3;
 
   final _roles = [
     'Backend',
@@ -31,18 +30,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     'DevOps / SRE',
     'Architect',
     'Student',
-  ];
-
-  final _allTopics = [
-    'Java / JVM',
-    'Kotlin',
-    'Spring',
-    'Cloud Native',
-    'AI / ML',
-    'Performance',
-    'Architecture',
-    'Testing',
-    'Security',
   ];
 
   @override
@@ -147,7 +134,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SectionLabel(text: 'Step 2 of 5'),
+              SectionLabel(text: 'Step 2 of 3'),
               const SizedBox(height: 6),
               Text(
                 'What\'s your role?',
@@ -174,61 +161,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           ),
         );
       case 2:
+        final hasLinkedIn = _linkedInController.text.trim().isNotEmpty;
         return Padding(
           key: const ValueKey(2),
           padding: const EdgeInsets.fromLTRB(24, 28, 24, 0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SectionLabel(text: 'Step 3 of 5'),
-              const SizedBox(height: 6),
-              Text(
-                'Pick your interests',
-                style: GoogleFonts.spaceGrotesk(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: -0.56,
-                  color: jp.fg,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                'We\'ll use these to suggest talks. Choose a few.',
-                style: GoogleFonts.hankenGrotesk(
-                  fontSize: 14,
-                  color: jp.fgSecondary,
-                ),
-              ),
-              const SizedBox(height: 20),
-              Wrap(
-                spacing: 10,
-                runSpacing: 10,
-                children: _allTopics
-                    .map((t) => JPChip(
-                          label: t,
-                          selected: _topics.contains(t),
-                          onTap: () => setState(() {
-                            if (_topics.contains(t)) {
-                              _topics.remove(t);
-                            } else {
-                              _topics.add(t);
-                            }
-                          }),
-                        ))
-                    .toList(),
-              ),
-            ],
-          ),
-        );
-      case 3:
-        final hasLinkedIn = _linkedInController.text.trim().isNotEmpty;
-        return Padding(
-          key: const ValueKey(3),
-          padding: const EdgeInsets.fromLTRB(24, 28, 24, 0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SectionLabel(text: 'Step 4 of 5'),
+              SectionLabel(text: 'Step 3 of 3'),
               const SizedBox(height: 6),
               Text(
                 'Add your LinkedIn',
@@ -372,55 +312,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   ),
                 ),
                 keyboardType: TextInputType.url,
-              ),
-            ],
-          ),
-        );
-      case 4:
-        return Center(
-          key: const ValueKey(4),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TweenAnimationBuilder<double>(
-                tween: Tween(begin: 0.0, end: 1.0),
-                duration: const Duration(milliseconds: 600),
-                curve: Curves.elasticOut,
-                builder: (context, value, child) =>
-                    Transform.scale(scale: value, child: child),
-                child: Container(
-                  width: 72,
-                  height: 72,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: jp.accentSoft,
-                  ),
-                  alignment: Alignment.center,
-                  child: PhosphorIcon(PhosphorIconsFill.sparkle,
-                      size: 34, color: jp.accent),
-                ),
-              ),
-              const SizedBox(height: 20),
-              Text(
-                'Building your agenda\u2026',
-                style: GoogleFonts.spaceGrotesk(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: -0.56,
-                  color: jp.fg,
-                ),
-              ),
-              const SizedBox(height: 10),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 40),
-                child: Text(
-                  'We matched ${_topics.isNotEmpty ? _topics.length : 'your'} interests to ${_role ?? 'your'} sessions across both days.',
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.hankenGrotesk(
-                    fontSize: 15,
-                    color: jp.fgSecondary,
-                  ),
-                ),
               ),
             ],
           ),
