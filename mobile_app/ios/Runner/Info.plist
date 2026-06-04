@@ -8,6 +8,8 @@
 	</array>
 	<key>NSCameraUsageDescription</key>
 	<string>jPrime needs camera access to scan QR codes and connect with other attendees.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>jPrime uses your location to show which part of the venue you're in and help you navigate between halls.</string>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>
