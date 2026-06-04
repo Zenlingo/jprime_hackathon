@@ -16,7 +16,13 @@ class MapScreen extends StatefulWidget {
   final String? highlight;
   final VoidCallback? onThemeToggle;
 
-  const MapScreen({super.key, required this.nowMin, required this.onOpenSession, this.highlight, this.onThemeToggle});
+  const MapScreen({
+    super.key,
+    required this.nowMin,
+    required this.onOpenSession,
+    this.highlight,
+    this.onThemeToggle,
+  });
 
   @override
   State<MapScreen> createState() => _MapScreenState();
@@ -48,10 +54,30 @@ class _MapScreenState extends State<MapScreen> {
     // Pair each anchor's real centroid with its center in the schematic
     // (see room/POI x/y/w/h in build()).
     return _VenueProjector.fit([
-      (lng: z('Hall A').centroidLng, lat: z('Hall A').centroidLat, x: 0.36, y: 0.115),
-      (lng: z('Hall B').centroidLng, lat: z('Hall B').centroidLat, x: 0.35, y: 0.73),
-      (lng: z('Workshop').centroidLng, lat: z('Workshop').centroidLat, x: 0.84, y: 0.65),
-      (lng: z('Food').centroidLng, lat: z('Food').centroidLat, x: 0.73, y: 0.38),
+      (
+        lng: z('Hall A').centroidLng,
+        lat: z('Hall A').centroidLat,
+        x: 0.36,
+        y: 0.115,
+      ),
+      (
+        lng: z('Hall B').centroidLng,
+        lat: z('Hall B').centroidLat,
+        x: 0.35,
+        y: 0.73,
+      ),
+      (
+        lng: z('Workshop').centroidLng,
+        lat: z('Workshop').centroidLat,
+        x: 0.84,
+        y: 0.65,
+      ),
+      (
+        lng: z('Food').centroidLng,
+        lat: z('Food').centroidLat,
+        x: 0.73,
+        y: 0.38,
+      ),
     ]);
   }
 
@@ -77,7 +103,9 @@ class _MapScreenState extends State<MapScreen> {
     });
     try {
       if (!await Geolocator.isLocationServiceEnabled()) {
-        _failLocate('Location services are off. Turn them on, or pick your spot.');
+        _failLocate(
+          'Location services are off. Turn them on, or pick your spot.',
+        );
         return;
       }
       var perm = await Geolocator.checkPermission();
@@ -90,7 +118,9 @@ class _MapScreenState extends State<MapScreen> {
         return;
       }
       final pos = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+        ),
       );
       // Are we standing inside any zone's footprint?
       VenueZone? inZone;
@@ -102,7 +132,8 @@ class _MapScreenState extends State<MapScreen> {
         }
       }
       // If we're anywhere on the venue grounds, drop a dot.
-      final atVenue = inZone != null ||
+      final atVenue =
+          inZone != null ||
           _pointInPolygon(pos.latitude, pos.longitude, venueBoundary);
       if (atVenue) {
         _meDot = _projectMe(inZone, pos.latitude, pos.longitude);
@@ -118,11 +149,15 @@ class _MapScreenState extends State<MapScreen> {
       }
       // Not inside any zone — are we at least within the venue grounds?
       if (atVenue) {
-        _failLocate("You're at the venue but not inside a mapped area "
-            "(maybe between buildings). Your dot is on the map.");
+        _failLocate(
+          "You're at the venue but not inside a mapped area "
+          "(maybe between buildings). Your dot is on the map.",
+        );
       } else {
-        _failLocate("You don't seem to be at the venue yet. "
-            "Pick your spot if you're already inside.");
+        _failLocate(
+          "You don't seem to be at the venue yet. "
+          "Pick your spot if you're already inside.",
+        );
       }
     } catch (_) {
       _failLocate('Could not read your location. Pick your spot instead.');
@@ -136,14 +171,17 @@ class _MapScreenState extends State<MapScreen> {
     final pts = [...poly];
     final cLat = pts.map((p) => p.lat).reduce((a, b) => a + b) / pts.length;
     final cLng = pts.map((p) => p.lng).reduce((a, b) => a + b) / pts.length;
-    pts.sort((a, b) => math
-        .atan2(a.lat - cLat, a.lng - cLng)
-        .compareTo(math.atan2(b.lat - cLat, b.lng - cLng)));
+    pts.sort(
+      (a, b) => math
+          .atan2(a.lat - cLat, a.lng - cLng)
+          .compareTo(math.atan2(b.lat - cLat, b.lng - cLng)),
+    );
     bool inside = false;
     for (int i = 0, j = pts.length - 1; i < pts.length; j = i++) {
       final xi = pts[i].lng, yi = pts[i].lat;
       final xj = pts[j].lng, yj = pts[j].lat;
-      final intersects = ((yi > lat) != (yj > lat)) &&
+      final intersects =
+          ((yi > lat) != (yj > lat)) &&
           (lng < (xj - xi) * (lat - yi) / (yj - yi) + xi);
       if (intersects) inside = !inside;
     }
@@ -157,8 +195,10 @@ class _MapScreenState extends State<MapScreen> {
     if (inZone != null) {
       final box = _zoneRects[inZone.id];
       if (box != null) {
-        final aff =
-            _zoneAffines.putIfAbsent(inZone.id, () => _fitZoneAffine(inZone, box));
+        final aff = _zoneAffines.putIfAbsent(
+          inZone.id,
+          () => _fitZoneAffine(inZone, box),
+        );
         if (aff != null) {
           final p = aff.apply(lat, lng);
           return Offset(
@@ -221,9 +261,11 @@ class _MapScreenState extends State<MapScreen> {
     final src = z.polygon.map((p) => toM(p.lat, p.lng)).toList();
     final scx = src.map((p) => p.dx).reduce((a, b) => a + b) / 4;
     final scy = src.map((p) => p.dy).reduce((a, b) => a + b) / 4;
-    src.sort((a, b) => math
-        .atan2(a.dy - scy, a.dx - scx)
-        .compareTo(math.atan2(b.dy - scy, b.dx - scx)));
+    src.sort(
+      (a, b) => math
+          .atan2(a.dy - scy, a.dx - scx)
+          .compareTo(math.atan2(b.dy - scy, b.dx - scx)),
+    );
 
     final dst = <Offset>[
       Offset(box.x, box.y),
@@ -241,7 +283,10 @@ class _MapScreenState extends State<MapScreen> {
     var bestScore = -1e9;
     for (final dir in [1, -1]) {
       for (var rot = 0; rot < 4; rot++) {
-        final sx = <double>[], sy = <double>[], dx = <double>[], dy = <double>[];
+        final sx = <double>[],
+            sy = <double>[],
+            dx = <double>[],
+            dy = <double>[];
         for (var i = 0; i < 4; i++) {
           final j = (((dir == 1 ? i + rot : rot - i) % 4) + 4) % 4;
           sx.add(src[j].dx);
@@ -252,9 +297,11 @@ class _MapScreenState extends State<MapScreen> {
         final aff = _Affine.fit(sx, sy, dx, dy, mPerLng, refLat, refLng);
         final s1 = math.sqrt(aff.ax * aff.ax + aff.ay * aff.ay);
         final s2 = math.sqrt(aff.bx * aff.bx + aff.by * aff.by);
-        final shear = (aff.ax * aff.bx + aff.ay * aff.by).abs() / (s1 * s2 + 1e-9) +
+        final shear =
+            (aff.ax * aff.bx + aff.ay * aff.by).abs() / (s1 * s2 + 1e-9) +
             (s1 - s2).abs() / (s1 + s2 + 1e-9);
-        final align = _cos(Offset(aff.ax, aff.ay), gEast) +
+        final align =
+            _cos(Offset(aff.ax, aff.ay), gEast) +
             _cos(Offset(aff.bx, aff.by), gNorth);
         final score = align * 2.0 - shear; // orientation first, then shape
         if (score > bestScore) {
@@ -296,7 +343,9 @@ class _MapScreenState extends State<MapScreen> {
         return;
       }
       final pos = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+        ),
       );
       final coord = '${pos.latitude}, ${pos.longitude}';
       if (!mounted) return;
@@ -323,6 +372,77 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 
+  /// Photo for each room / POI, shown when it's tapped. Hall A and Companies
+  /// share one shot of the main hall.
+  static const _zonePhotos = <String, String>{
+    'Hall A': 'assets/venue/hall_a.jpg',
+    'Companies': 'assets/venue/hall_a.jpg',
+    'Hall B': 'assets/venue/hall_b.jpg',
+    'Workshop': 'assets/venue/workshop.jpg',
+    'Registration': 'assets/venue/registration.jpg',
+    'Food': 'assets/venue/food.jpg',
+  };
+
+  /// Show a tapped zone's photo in a full-screen overlay in front of the map.
+  void _showPhoto(String id, String label) {
+    final asset = _zonePhotos[id];
+    if (asset == null) return;
+    showDialog<void>(
+      context: context,
+      barrierColor: Colors.black.withValues(alpha: 0.82),
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Flexible(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: InteractiveViewer(
+                  child: Image.asset(asset, fit: BoxFit.contain),
+                ),
+              ),
+            ),
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    label,
+                    style: GoogleFonts.spaceGrotesk(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () => Navigator.of(ctx).pop(),
+                  child: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white.withValues(alpha: 0.15),
+                    ),
+                    alignment: Alignment.center,
+                    child: PhosphorIcon(
+                      PhosphorIconsRegular.x,
+                      size: 20,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final jp = context.jp;
@@ -331,14 +451,38 @@ class _MapScreenState extends State<MapScreen> {
     // Hall B lower-left, Food mid-right and Workshop on the far-right edge.
     final rooms = [
       _MapRoom(id: 'Hall A', trackId: 'a', x: 0.05, y: 0.04, w: 0.62, h: 0.15),
-      _MapRoom(id: 'Companies', trackId: null, x: 0.06, y: 0.2, w: 0.60, h: 0.085),
+      _MapRoom(
+        id: 'Companies',
+        trackId: null,
+        x: 0.06,
+        y: 0.2,
+        w: 0.60,
+        h: 0.085,
+      ),
       // _MapRoom(id: 'Chill', trackId: null, x: 0.10, y: 0.52, w: 0.34, h: 0.13),
       _MapRoom(id: 'Hall B', trackId: 'b', x: 0.13, y: 0.65, w: 0.44, h: 0.16),
-      _MapRoom(id: 'Workshop', trackId: 'workshop', x: 0.74, y: 0.49, w: 0.20, h: 0.32),
+      _MapRoom(
+        id: 'Workshop',
+        trackId: 'workshop',
+        x: 0.74,
+        y: 0.49,
+        w: 0.20,
+        h: 0.32,
+      ),
     ];
     final pois = [
-      _POI(icon: PhosphorIconsRegular.info, label: 'Registration', x: 0.3, y: 0.32),
-      _POI(icon: PhosphorIconsRegular.forkKnife, label: 'Food', x: 0.73, y: 0.38),
+      _POI(
+        icon: PhosphorIconsRegular.info,
+        label: 'Registration',
+        x: 0.3,
+        y: 0.32,
+      ),
+      _POI(
+        icon: PhosphorIconsRegular.forkKnife,
+        label: 'Food',
+        x: 0.73,
+        y: 0.38,
+      ),
     ];
 
     return Stack(
@@ -389,25 +533,43 @@ class _MapScreenState extends State<MapScreen> {
                           children: [
                             // Rooms
                             ...rooms.map((r) {
-                              final tColor = r.trackId != null ? trackColor(context, r.trackId!) : null;
-                              final tSoft = r.trackId != null ? trackSoftColor(context, r.trackId!) : null;
+                              final tColor = r.trackId != null
+                                  ? trackColor(context, r.trackId!)
+                                  : null;
+                              final tSoft = r.trackId != null
+                                  ? trackSoftColor(context, r.trackId!)
+                                  : null;
                               final sel = _selectedRoom == r.id;
                               return Positioned(
                                 left: r.x * w,
                                 top: r.y * h,
                                 width: r.w * w,
                                 height: r.h * h,
-                                child: AnimatedContainer(
+                                child: GestureDetector(
+                                  behavior: HitTestBehavior.opaque,
+                                  onTap: () {
+                                    setState(() => _selectedRoom = r.id);
+                                    _showPhoto(r.id, r.id);
+                                  },
+                                  child: AnimatedContainer(
                                     duration: const Duration(milliseconds: 220),
                                     decoration: BoxDecoration(
                                       color: tSoft ?? jp.surface2,
                                       border: Border.all(
-                                        color: sel ? jp.accent : (tColor ?? jp.borderStrong),
+                                        color: sel
+                                            ? jp.accent
+                                            : (tColor ?? jp.borderStrong),
                                         width: 2,
                                       ),
                                       borderRadius: BorderRadius.circular(10),
                                       boxShadow: sel
-                                          ? [BoxShadow(color: jp.accentSoft, blurRadius: 0, spreadRadius: 4)]
+                                          ? [
+                                              BoxShadow(
+                                                color: jp.accentSoft,
+                                                blurRadius: 0,
+                                                spreadRadius: 4,
+                                              ),
+                                            ]
                                           : null,
                                     ),
                                     alignment: Alignment.bottomLeft,
@@ -423,6 +585,7 @@ class _MapScreenState extends State<MapScreen> {
                                       ),
                                     ),
                                   ),
+                                ),
                               );
                             }),
                             // POIs
@@ -430,36 +593,46 @@ class _MapScreenState extends State<MapScreen> {
                               (p) => Positioned(
                                 left: p.x * w - 15,
                                 top: p.y * h - 20,
-                                child: Column(
-                                  children: [
-                                    Container(
-                                      width: 30,
-                                      height: 30,
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: jp.surface,
-                                        border: Border.all(color: jp.border),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: Colors.black.withValues(alpha: 0.06),
-                                            blurRadius: 2,
-                                            offset: const Offset(0, 1),
-                                          ),
-                                        ],
+                                child: GestureDetector(
+                                  behavior: HitTestBehavior.opaque,
+                                  onTap: () => _showPhoto(p.label, p.label),
+                                  child: Column(
+                                    children: [
+                                      Container(
+                                        width: 30,
+                                        height: 30,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: jp.surface,
+                                          border: Border.all(color: jp.border),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.black.withValues(
+                                                alpha: 0.06,
+                                              ),
+                                              blurRadius: 2,
+                                              offset: const Offset(0, 1),
+                                            ),
+                                          ],
+                                        ),
+                                        alignment: Alignment.center,
+                                        child: PhosphorIcon(
+                                          p.icon,
+                                          size: 16,
+                                          color: jp.fgSecondary,
+                                        ),
                                       ),
-                                      alignment: Alignment.center,
-                                      child: PhosphorIcon(p.icon, size: 16, color: jp.fgSecondary),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      p.label,
-                                      style: GoogleFonts.jetBrainsMono(
-                                        fontSize: 9,
-                                        fontWeight: FontWeight.w600,
-                                        color: jp.fgMuted,
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        p.label,
+                                        style: GoogleFonts.jetBrainsMono(
+                                          fontSize: 9,
+                                          fontWeight: FontWeight.w600,
+                                          color: jp.fgMuted,
+                                        ),
                                       ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
                               ),
                             ),
@@ -468,7 +641,10 @@ class _MapScreenState extends State<MapScreen> {
                               Positioned(
                                 left: _meDot!.dx * w - (_meApprox ? 18 : 13),
                                 top: _meDot!.dy * h - (_meApprox ? 18 : 13),
-                                child: _MeDot(accuracyM: _meAccM, approximate: _meApprox),
+                                child: _MeDot(
+                                  accuracyM: _meAccM,
+                                  approximate: _meApprox,
+                                ),
                               ),
                           ],
                         );
@@ -499,16 +675,21 @@ const _zoneRects = <String, _Box>{
 };
 
 /// Zones drawn as a single point marker rather than a box (e.g. Food).
-const _zonePoints = <String, Offset>{
-  'Food': Offset(0.73, 0.38),
-};
+const _zonePoints = <String, Offset>{'Food': Offset(0.73, 0.38)};
 
 class _MapRoom {
   final String id;
   final String? trackId;
   final double x, y, w, h;
 
-  const _MapRoom({required this.id, this.trackId, required this.x, required this.y, required this.w, required this.h});
+  const _MapRoom({
+    required this.id,
+    this.trackId,
+    required this.x,
+    required this.y,
+    required this.w,
+    required this.h,
+  });
 }
 
 class _POI {
@@ -516,7 +697,12 @@ class _POI {
   final String label;
   final double x, y;
 
-  const _POI({required this.icon, required this.label, required this.x, required this.y});
+  const _POI({
+    required this.icon,
+    required this.label,
+    required this.x,
+    required this.y,
+  });
 }
 
 /// "You are here" control: a Locate button that snaps to the nearest GPS zone,
@@ -559,7 +745,11 @@ class _LocateBar extends StatelessWidget {
             ),
             child: Row(
               children: [
-                PhosphorIcon(PhosphorIconsFill.mapPin, size: 18, color: jp.accent),
+                PhosphorIcon(
+                  PhosphorIconsFill.mapPin,
+                  size: 18,
+                  color: jp.accent,
+                ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Column(
@@ -588,7 +778,11 @@ class _LocateBar extends StatelessWidget {
                 ),
                 GestureDetector(
                   onTap: onClear,
-                  child: PhosphorIcon(PhosphorIconsRegular.x, size: 16, color: jp.fgMuted),
+                  child: PhosphorIcon(
+                    PhosphorIconsRegular.x,
+                    size: 16,
+                    color: jp.fgMuted,
+                  ),
                 ),
               ],
             ),
@@ -612,10 +806,17 @@ class _LocateBar extends StatelessWidget {
                     SizedBox(
                       width: 16,
                       height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: jp.onAccent),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: jp.onAccent,
+                      ),
                     )
                   else
-                    PhosphorIcon(PhosphorIconsFill.navigationArrow, size: 17, color: jp.onAccent),
+                    PhosphorIcon(
+                      PhosphorIconsFill.navigationArrow,
+                      size: 17,
+                      color: jp.onAccent,
+                    ),
                   const SizedBox(width: 9),
                   Text(
                     locating ? 'Locating…' : 'Locate me on the map',
@@ -633,32 +834,40 @@ class _LocateBar extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             error!,
-            style: GoogleFonts.hankenGrotesk(fontSize: 12, color: jp.fgSecondary),
+            style: GoogleFonts.hankenGrotesk(
+              fontSize: 12,
+              color: jp.fgSecondary,
+            ),
           ),
           const SizedBox(height: 8),
           Wrap(
             spacing: 8,
             runSpacing: 8,
             children: venueZones
-                .map((z) => GestureDetector(
-                      onTap: () => onPickManual(z),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-                        decoration: BoxDecoration(
-                          color: jp.surface2,
-                          border: Border.all(color: jp.border),
-                          borderRadius: BorderRadius.circular(JPSpacing.rPill),
-                        ),
-                        child: Text(
-                          z.label,
-                          style: GoogleFonts.hankenGrotesk(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: jp.fg,
-                          ),
+                .map(
+                  (z) => GestureDetector(
+                    onTap: () => onPickManual(z),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 7,
+                      ),
+                      decoration: BoxDecoration(
+                        color: jp.surface2,
+                        border: Border.all(color: jp.border),
+                        borderRadius: BorderRadius.circular(JPSpacing.rPill),
+                      ),
+                      child: Text(
+                        z.label,
+                        style: GoogleFonts.hankenGrotesk(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: jp.fg,
                         ),
                       ),
-                    ))
+                    ),
+                  ),
+                )
                 .toList(),
           ),
         ],
@@ -679,9 +888,10 @@ class _MeDot extends StatefulWidget {
 }
 
 class _MeDotState extends State<_MeDot> with SingleTickerProviderStateMixin {
-  late final AnimationController _c =
-      AnimationController(vsync: this, duration: const Duration(milliseconds: 1600))
-        ..repeat();
+  late final AnimationController _c = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1600),
+  )..repeat();
 
   @override
   void dispose() {
@@ -709,7 +919,9 @@ class _MeDotState extends State<_MeDot> with SingleTickerProviderStateMixin {
                 height: 12 + haloMax * t,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: jp.accent.withValues(alpha: (approx ? 0.20 : 0.28) * (1 - t)),
+                  color: jp.accent.withValues(
+                    alpha: (approx ? 0.20 : 0.28) * (1 - t),
+                  ),
                 ),
               ),
               child!,
@@ -762,7 +974,8 @@ class _VenueProjector {
   _VenueProjector._(this._mLng, this._mLat, this._cx, this._cy);
 
   factory _VenueProjector.fit(
-      List<({double lng, double lat, double x, double y})> pts) {
+    List<({double lng, double lat, double x, double y})> pts,
+  ) {
     final n = pts.length;
     final mLng = pts.map((p) => p.lng).reduce((a, b) => a + b) / n;
     final mLat = pts.map((p) => p.lat).reduce((a, b) => a + b) / n;
@@ -778,8 +991,18 @@ class _VenueProjector {
         by[i] += v[i] * p.y;
       }
     }
-    final cx = _solve3([for (final r in m) [...r]], [...bx]);
-    final cy = _solve3([for (final r in m) [...r]], [...by]);
+    final cx = _solve3(
+      [
+        for (final r in m) [...r],
+      ],
+      [...bx],
+    );
+    final cy = _solve3(
+      [
+        for (final r in m) [...r],
+      ],
+      [...by],
+    );
     return _VenueProjector._(mLng, mLat, cx, cy);
   }
 
@@ -798,11 +1021,27 @@ class _VenueProjector {
 class _Affine {
   final double ax, bx, cx, ay, by, cy;
   final double refLat, refLng, mPerLng;
-  const _Affine(this.ax, this.bx, this.cx, this.ay, this.by, this.cy,
-      this.refLat, this.refLng, this.mPerLng);
+  const _Affine(
+    this.ax,
+    this.bx,
+    this.cx,
+    this.ay,
+    this.by,
+    this.cy,
+    this.refLat,
+    this.refLng,
+    this.mPerLng,
+  );
 
-  factory _Affine.fit(List<double> sx, List<double> sy, List<double> dx,
-      List<double> dy, double mPerLng, double refLat, double refLng) {
+  factory _Affine.fit(
+    List<double> sx,
+    List<double> sy,
+    List<double> dx,
+    List<double> dy,
+    double mPerLng,
+    double refLat,
+    double refLng,
+  ) {
     final m = List.generate(3, (_) => List.filled(3, 0.0));
     final bX = List.filled(3, 0.0), bY = List.filled(3, 0.0);
     for (var i = 0; i < sx.length; i++) {
@@ -815,9 +1054,29 @@ class _Affine {
         bY[r] += v[r] * dy[i];
       }
     }
-    final cX = _solve3([for (final r in m) [...r]], [...bX]);
-    final cY = _solve3([for (final r in m) [...r]], [...bY]);
-    return _Affine(cX[0], cX[1], cX[2], cY[0], cY[1], cY[2], refLat, refLng, mPerLng);
+    final cX = _solve3(
+      [
+        for (final r in m) [...r],
+      ],
+      [...bX],
+    );
+    final cY = _solve3(
+      [
+        for (final r in m) [...r],
+      ],
+      [...bY],
+    );
+    return _Affine(
+      cX[0],
+      cX[1],
+      cX[2],
+      cY[0],
+      cY[1],
+      cY[2],
+      refLat,
+      refLng,
+      mPerLng,
+    );
   }
 
   Offset apply(double lat, double lng) {
@@ -834,8 +1093,12 @@ List<double> _solve3(List<List<double>> a, List<double> b) {
     for (var r = col + 1; r < 3; r++) {
       if (a[r][col].abs() > a[piv][col].abs()) piv = r;
     }
-    final tr = a[col]; a[col] = a[piv]; a[piv] = tr;
-    final tb = b[col]; b[col] = b[piv]; b[piv] = tb;
+    final tr = a[col];
+    a[col] = a[piv];
+    a[piv] = tr;
+    final tb = b[col];
+    b[col] = b[piv];
+    b[piv] = tb;
     final d = a[col][col];
     if (d.abs() < 1e-12) continue; // degenerate; leave as-is
     for (var r = 0; r < 3; r++) {
@@ -870,7 +1133,11 @@ class _ThemeButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(JPSpacing.rPill),
         ),
         alignment: Alignment.center,
-        child: PhosphorIcon(isDark ? PhosphorIconsFill.sun : PhosphorIconsFill.moonStars, size: 19, color: jp.fg),
+        child: PhosphorIcon(
+          isDark ? PhosphorIconsFill.sun : PhosphorIconsFill.moonStars,
+          size: 19,
+          color: jp.fg,
+        ),
       ),
     );
   }
