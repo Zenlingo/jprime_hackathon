@@ -4,6 +4,7 @@ import '../theme/app_theme.dart';
 import '../data/sample_data.dart';
 import 'avatar.dart';
 import 'track_tag.dart';
+import 'level_badge.dart';
 import 'live_dot.dart';
 import 'progress_bar.dart';
 import 'fav_star.dart';
@@ -23,6 +24,16 @@ class SessionCard extends StatelessWidget {
     this.onFav,
     this.onTap,
   });
+
+  String _speakerNames() {
+    final primary = session.speakerName ??
+        JPData.speakers[session.speakerId]?.name ??
+        '';
+    if (session.coSpeakerName != null) {
+      return '$primary & ${session.coSpeakerName}';
+    }
+    return primary;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -125,10 +136,24 @@ class SessionCard extends StatelessWidget {
                 children: [
                   if (session.speakerId != null) ...[
                     SpeakerAvatar(speakerId: session.speakerId!, size: 24),
+                    if (session.coSpeakerName != null) ...[
+                      const SizedBox(width: 4),
+                      Builder(builder: (context) {
+                        final coSlug = session.coSpeakerName!
+                            .toLowerCase()
+                            .replaceAll(RegExp(r'[^a-z0-9]'), '-')
+                            .replaceAll(RegExp(r'-+'), '-')
+                            .replaceAll(RegExp(r'^-|-$'), '');
+                        if (JPData.speakers.containsKey(coSlug)) {
+                          return SpeakerAvatar(speakerId: coSlug, size: 24);
+                        }
+                        return const SizedBox.shrink();
+                      }),
+                    ],
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        JPData.speakers[session.speakerId]?.name ?? '',
+                        _speakerNames(),
                         style: GoogleFonts.hankenGrotesk(
                           fontSize: 12,
                           fontWeight: FontWeight.w500,
@@ -139,6 +164,10 @@ class SessionCard extends StatelessWidget {
                     ),
                   ] else
                     const Spacer(),
+                  if (session.level.isNotEmpty) ...[
+                    LevelBadge(level: session.level, small: true),
+                    const SizedBox(width: 6),
+                  ],
                   TrackTag(trackId: session.trackId, small: true),
                 ],
               ),

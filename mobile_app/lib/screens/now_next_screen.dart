@@ -10,63 +10,77 @@ import '../widgets/progress_bar.dart';
 
 class NowNextScreen extends StatelessWidget {
   final int nowMin;
+  final int currentDay;
   final VoidCallback? onThemeToggle;
   final void Function(SessionData session)? onOpenSession;
 
   const NowNextScreen({
     super.key,
     required this.nowMin,
+    this.currentDay = 0,
     this.onThemeToggle,
     this.onOpenSession,
   });
 
   @override
   Widget build(BuildContext context) {
-    final rooms = ['Hall A', 'Hall B', 'Workshop'];
-    final pinned = ['Hall A'];
-    final yours = rooms.where((r) => pinned.contains(r)).toList();
-    final others = rooms.where((r) => !pinned.contains(r)).toList();
+    // Filter sessions for the current conference day
+    final todaySessions = currentDay > 0
+        ? JPData.sessions.where((s) => s.day == currentDay && !s.isBreak).toList()
+        : JPData.sessions.where((s) => !s.isBreak).toList();
+
+    final rooms = todaySessions
+        .map((s) => s.room)
+        .toSet()
+        .toList()
+      ..sort();
+
+    final subtitle = currentDay > 0
+        ? 'jPrime \u00B7 Day $currentDay'
+        : 'jPrime ${JPData.totalDays > 0 ? '\u00B7 ${JPData.totalDays} days' : ''}';
+
+    // Determine overall state
+    final hasLive = todaySessions.any((s) => s.statusAt(nowMin) == 'live');
+    final hasUpcoming = todaySessions.any((s) => s.statusAt(nowMin) == 'upcoming');
+    final allDone = todaySessions.isNotEmpty && !hasLive && !hasUpcoming;
+    final isLastDay = currentDay >= JPData.totalDays;
+
+    Widget body;
+    if (rooms.isEmpty) {
+      body = _EmptyState();
+    } else if (allDone && isLastDay) {
+      body = _ConferenceEndedState();
+    } else if (allDone && !isLastDay) {
+      body = _DayDoneState(currentDay: currentDay);
+    } else {
+      body = ListView(
+        padding: const EdgeInsets.fromLTRB(18, 16, 18, 90),
+        children: [
+          SectionLabel(
+            icon: PhosphorIconsRegular.broadcast,
+            text: 'All rooms',
+          ),
+          ...rooms.map((r) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _RoomCard(
+                  room: r,
+                  nowMin: nowMin,
+                  currentDay: currentDay,
+                  onOpenSession: onOpenSession,
+                ),
+              )),
+        ],
+      );
+    }
 
     return Column(
       children: [
         AppHeader(
           title: 'Now & Next',
-          subtitle: 'jPrime \u00B7 Day 1',
+          subtitle: subtitle,
           trailing: _ThemeButton(onTap: onThemeToggle),
         ),
-        Expanded(
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(18, 16, 18, 90),
-            children: [
-              SectionLabel(
-                icon: PhosphorIconsRegular.pushPin,
-                text: 'Your rooms',
-              ),
-              ...yours.map((r) => Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: _RoomCard(
-                      room: r,
-                      nowMin: nowMin,
-                      pinned: true,
-                      onOpenSession: onOpenSession,
-                    ),
-                  )),
-              const SizedBox(height: 12),
-              SectionLabel(
-                icon: PhosphorIconsRegular.broadcast,
-                text: 'All rooms',
-              ),
-              ...others.map((r) => Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: _RoomCard(
-                      room: r,
-                      nowMin: nowMin,
-                      onOpenSession: onOpenSession,
-                    ),
-                  )),
-            ],
-          ),
-        ),
+        Expanded(child: body),
       ],
     );
   }
@@ -75,21 +89,25 @@ class NowNextScreen extends StatelessWidget {
 class _RoomCard extends StatelessWidget {
   final String room;
   final int nowMin;
-  final bool pinned;
+  final int currentDay;
   final void Function(SessionData session)? onOpenSession;
 
   const _RoomCard({
     required this.room,
     required this.nowMin,
-    this.pinned = false,
+    this.currentDay = 0,
     this.onOpenSession,
   });
 
   @override
   Widget build(BuildContext context) {
     final jp = context.jp;
-    final inRoom =
-        JPData.sessions.where((s) => s.room == room && !s.isBreak).toList();
+    final inRoom = JPData.sessions
+        .where((s) =>
+            s.room == room &&
+            !s.isBreak &&
+            (currentDay == 0 || s.day == currentDay))
+        .toList();
     final now = inRoom.where((s) => s.statusAt(nowMin) == 'live').firstOrNull;
     final next = inRoom
         .where((s) => s.statusAt(nowMin) == 'upcoming')
@@ -98,15 +116,16 @@ class _RoomCard extends StatelessWidget {
     final nextSession = next.firstOrNull;
 
     return GestureDetector(
-      onTap: now != null ? () => onOpenSession?.call(now) : null,
+      onTap: now != null
+          ? () => onOpenSession?.call(now)
+          : nextSession != null
+              ? () => onOpenSession?.call(nextSession)
+              : null,
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: jp.surface,
-          border: Border.all(
-            color: pinned ? jp.accent : jp.border,
-            width: pinned ? 1.5 : 1,
-          ),
+          border: Border.all(color: jp.border),
           borderRadius: BorderRadius.circular(JPSpacing.rMd),
           boxShadow: [
             BoxShadow(
@@ -120,23 +139,14 @@ class _RoomCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Room name header
-            Row(
-              children: [
-                Text(
-                  room,
-                  style: GoogleFonts.spaceGrotesk(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -0.18,
-                    color: jp.fg,
-                  ),
-                ),
-                if (pinned) ...[
-                  const Spacer(),
-                  PhosphorIcon(PhosphorIconsFill.pushPin,
-                      size: 16, color: jp.accent),
-                ],
-              ],
+            Text(
+              room,
+              style: GoogleFonts.spaceGrotesk(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.18,
+                color: jp.fg,
+              ),
             ),
             const SizedBox(height: 12),
 
@@ -176,6 +186,16 @@ class _RoomCard extends StatelessWidget {
                   color: jp.fg,
                 ),
               ),
+              if (now.speakerName != null) ...[
+                const SizedBox(height: 4),
+                Text(
+                  now.speakerName!,
+                  style: GoogleFonts.hankenGrotesk(
+                    fontSize: 13,
+                    color: jp.fgSecondary,
+                  ),
+                ),
+              ],
               const SizedBox(height: 10),
               JPProgressBar(value: now.progressAt(nowMin)),
             ] else ...[
@@ -204,42 +224,173 @@ class _RoomCard extends StatelessWidget {
                 decoration: BoxDecoration(
                   border: Border(top: BorderSide(color: jp.border)),
                 ),
-                child: Row(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'NEXT',
-                      style: GoogleFonts.jetBrainsMono(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 1.0,
-                        color: jp.fgMuted,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        nextSession.title,
-                        style: GoogleFonts.hankenGrotesk(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                          color: jp.fgSecondary,
+                    Row(
+                      children: [
+                        Text(
+                          'NEXT',
+                          style: GoogleFonts.jetBrainsMono(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1.0,
+                            color: jp.fgMuted,
+                          ),
                         ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
+                        const Spacer(),
+                        Text(
+                          nextSession.start,
+                          style: GoogleFonts.jetBrainsMono(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: jp.fgSecondary,
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 10),
+                    const SizedBox(height: 6),
                     Text(
-                      nextSession.start,
-                      style: GoogleFonts.jetBrainsMono(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
+                      nextSession.title,
+                      style: GoogleFonts.hankenGrotesk(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
                         color: jp.fgSecondary,
                       ),
                     ),
+                    if (nextSession.speakerName != null) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        nextSession.speakerName!,
+                        style: GoogleFonts.hankenGrotesk(
+                          fontSize: 12,
+                          color: jp.fgMuted,
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
             ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DayDoneState extends StatelessWidget {
+  final int currentDay;
+
+  const _DayDoneState({required this.currentDay});
+
+  @override
+  Widget build(BuildContext context) {
+    final jp = context.jp;
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            PhosphorIcon(PhosphorIconsRegular.moonStars,
+                size: 48, color: jp.accent),
+            const SizedBox(height: 16),
+            Text(
+              'That\u2019s a wrap for Day $currentDay!',
+              style: GoogleFonts.spaceGrotesk(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: jp.fg,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Sessions continue tomorrow.\nGet some rest and see you in the morning!',
+              style: GoogleFonts.hankenGrotesk(
+                fontSize: 15,
+                height: 1.5,
+                color: jp.fgSecondary,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ConferenceEndedState extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final jp = context.jp;
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            PhosphorIcon(PhosphorIconsRegular.confetti,
+                size: 48, color: jp.accent),
+            const SizedBox(height: 16),
+            Text(
+              'jPrime is over!',
+              style: GoogleFonts.spaceGrotesk(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: jp.fg,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Thanks for joining. Hope you had a great time!\nSee you next year.',
+              style: GoogleFonts.hankenGrotesk(
+                fontSize: 15,
+                height: 1.5,
+                color: jp.fgSecondary,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _EmptyState extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final jp = context.jp;
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            PhosphorIcon(PhosphorIconsRegular.calendarBlank,
+                size: 48, color: jp.fgMuted),
+            const SizedBox(height: 16),
+            Text(
+              'No sessions today',
+              style: GoogleFonts.spaceGrotesk(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: jp.fgSecondary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Check the Schedule tab for the full programme.',
+              style: GoogleFonts.hankenGrotesk(
+                fontSize: 14,
+                color: jp.fgMuted,
+              ),
+              textAlign: TextAlign.center,
+            ),
           ],
         ),
       ),

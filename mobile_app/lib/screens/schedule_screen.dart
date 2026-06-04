@@ -12,14 +12,18 @@ import '../widgets/empty_state.dart';
 
 class ScheduleScreen extends StatefulWidget {
   final int nowMin;
+  final int currentDay;
   final Set<String> favs;
+  final bool isActive;
   final void Function(String id) onToggleFav;
   final void Function(SessionData session) onOpenSession;
 
   const ScheduleScreen({
     super.key,
     required this.nowMin,
+    this.currentDay = 1,
     required this.favs,
+    this.isActive = false,
     required this.onToggleFav,
     required this.onOpenSession,
   });
@@ -29,11 +33,39 @@ class ScheduleScreen extends StatefulWidget {
 }
 
 class _ScheduleScreenState extends State<ScheduleScreen> {
-  int _day = 1;
+  late int _day = widget.currentDay.clamp(1, JPData.totalDays.clamp(1, 99));
+
+  /// Effective nowMin accounting for day: future day → all upcoming, past day → all finished.
+  int get _effectiveNowMin {
+    if (_day < widget.currentDay) return 9999; // past day — all finished
+    if (_day > widget.currentDay) return 0;    // future day — all upcoming
+    return widget.nowMin;                       // current day — real time
+  }
+
   String _query = '';
   String _filter = 'all';
   bool _showFilterSheet = false;
   final _searchController = TextEditingController();
+  final _scrollKey = GlobalKey();
+  bool _hasScrolled = false;
+  int _lastSessionCount = 0;
+
+  @override
+  void didUpdateWidget(covariant ScheduleScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final sessionCount = _filteredSessions.length;
+    // Scroll when tab becomes active, or when data first loads while active
+    final justActivated = widget.isActive && !oldWidget.isActive;
+    final dataJustLoaded =
+        widget.isActive && sessionCount > 0 && _lastSessionCount == 0;
+    _lastSessionCount = sessionCount;
+    if (justActivated || (dataJustLoaded && !_hasScrolled)) {
+      _hasScrolled = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _scrollToCurrentSlot();
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -42,22 +74,116 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   }
 
   List<SessionData> get _filteredSessions {
-    var list =
-        JPData.sessions.where((s) => !s.isBreak).toList();
+    var list = JPData.sessions.where((s) => s.day == _day).toList();
     if (_filter == 'favs') {
-      list = list.where((s) => widget.favs.contains(s.id)).toList();
+      list = list
+          .where((s) => s.isBreak || widget.favs.contains(s.id))
+          .toList();
     } else if (_filter != 'all') {
-      list = list.where((s) => s.trackId == _filter).toList();
+      list = list
+          .where((s) => s.isBreak || s.trackId == _filter)
+          .toList();
     }
     if (_query.trim().isNotEmpty) {
       final q = _query.toLowerCase();
       list = list.where((s) {
-        final speakerName =
-            JPData.speakers[s.speakerId]?.name.toLowerCase() ?? '';
-        return s.title.toLowerCase().contains(q) || speakerName.contains(q);
+        if (s.isBreak) return s.title.toLowerCase().contains(q);
+        final name = s.speakerName?.toLowerCase() ??
+            JPData.speakers[s.speakerId]?.name.toLowerCase() ??
+            '';
+        return s.title.toLowerCase().contains(q) || name.contains(q);
       }).toList();
     }
     return list;
+  }
+
+  void _scrollToCurrentSlot() {
+    if (_scrollKey.currentContext != null) {
+      Scrollable.ensureVisible(
+        _scrollKey.currentContext!,
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeOut,
+        alignment: 0.0,
+      );
+    }
+  }
+
+  /// Find the time key of the first slot that is live or upcoming.
+  String? get _targetSlotKey {
+    final grouped = _groupedBySlot;
+    // First: a live talk (not a break)
+    for (final entry in grouped.entries) {
+      if (entry.value.any((s) => !s.isBreak && s.statusAt(_effectiveNowMin) == 'live')) {
+        return entry.key;
+      }
+    }
+    // Then the first upcoming slot (talks or breaks)
+    for (final entry in grouped.entries) {
+      if (entry.value.any((s) => s.statusAt(_effectiveNowMin) == 'upcoming')) {
+        return entry.key;
+      }
+    }
+    // All finished — stay at top
+    return null;
+  }
+
+  List<Widget> _buildSlotGroups(
+      Map<String, List<SessionData>> grouped, JPThemeColors jp) {
+    final targetKey = _targetSlotKey;
+    final widgets = <Widget>[];
+
+    for (final entry in grouped.entries) {
+      final time = entry.key;
+      final sessions = entry.value;
+      final isTarget = time == targetKey;
+
+      widgets.add(
+        Padding(
+          key: isTarget ? _scrollKey : null,
+          padding: const EdgeInsets.only(bottom: 22),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text(
+                    time,
+                    style: GoogleFonts.jetBrainsMono(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: jp.fg,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '${sessions.first.end} end',
+                    style: GoogleFonts.jetBrainsMono(
+                      fontSize: 11,
+                      color: jp.fgMuted,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              ...sessions.map((s) => Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: s.isBreak
+                        ? _BreakRow(session: s, nowMin: _effectiveNowMin)
+                        : SessionCard(
+                            session: s,
+                            nowMin: _effectiveNowMin,
+                            fav: widget.favs.contains(s.id),
+                            onFav: () => widget.onToggleFav(s.id),
+                            onTap: () => widget.onOpenSession(s),
+                          ),
+                  )),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return widgets;
   }
 
   Map<String, List<SessionData>> get _groupedBySlot {
@@ -82,11 +208,16 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           children: [
             AppHeader(
               title: 'Schedule',
-              trailing: SegmentedControl<int>(
-                value: _day,
-                onChanged: (v) => setState(() => _day = v),
-                options: [(value: 1, label: 'Day 1'), (value: 2, label: 'Day 2')],
-              ),
+              trailing: JPData.totalDays > 1
+                  ? SegmentedControl<int>(
+                      value: _day,
+                      onChanged: (v) => setState(() => _day = v),
+                      options: [
+                        for (var d = 1; d <= JPData.totalDays; d++)
+                          (value: d, label: 'Day $d'),
+                      ],
+                    )
+                  : null,
             ),
 
             // Search + filter chips
@@ -153,8 +284,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                     ...[
                       ('all', 'All'),
                       ('favs', 'Favorites'),
-                      ('a', 'Track A'),
-                      ('b', 'Track B'),
+                      ('a', 'Hall A'),
+                      ('b', 'Hall B'),
                       ('workshop', 'Workshops'),
                     ].map((e) => Padding(
                           padding: const EdgeInsets.only(right: 8),
@@ -191,53 +322,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                   title: 'No talks match',
                   body: 'Try clearing the filter or search.',
                 )
-              : ListView.builder(
+              : ListView(
                   padding: const EdgeInsets.fromLTRB(18, 4, 18, 90),
-                  itemCount: grouped.length,
-                  itemBuilder: (context, index) {
-                    final entry = grouped.entries.elementAt(index);
-                    final time = entry.key;
-                    final sessions = entry.value;
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 22),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Text(
-                                time,
-                                style: GoogleFonts.jetBrainsMono(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: jp.fg,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                '${sessions.first.end} end',
-                                style: GoogleFonts.jetBrainsMono(
-                                  fontSize: 11,
-                                  color: jp.fgMuted,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 10),
-                          ...sessions.map((s) => Padding(
-                                padding: const EdgeInsets.only(bottom: 12),
-                                child: SessionCard(
-                                  session: s,
-                                  nowMin: widget.nowMin,
-                                  fav: widget.favs.contains(s.id),
-                                  onFav: () => widget.onToggleFav(s.id),
-                                  onTap: () => widget.onOpenSession(s),
-                                ),
-                              )),
-                        ],
-                      ),
-                    );
-                  },
+                  children: _buildSlotGroups(grouped, jp),
                 ),
         ),
           ],
@@ -251,6 +338,65 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
             onClose: () => setState(() => _showFilterSheet = false),
           ),
       ],
+    );
+  }
+}
+
+class _BreakRow extends StatelessWidget {
+  final SessionData session;
+  final int nowMin;
+
+  const _BreakRow({required this.session, required this.nowMin});
+
+  IconData get _icon {
+    final t = session.title.toLowerCase();
+    if (t.contains('lunch')) return PhosphorIconsRegular.forkKnife;
+    if (t.contains('coffee')) return PhosphorIconsRegular.coffee;
+    if (t.contains('registration')) return PhosphorIconsRegular.clipboardText;
+    if (t.contains('raffle')) return PhosphorIconsRegular.gift;
+    if (t.contains('opening')) return PhosphorIconsRegular.megaphone;
+    return PhosphorIconsRegular.coffee;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final jp = context.jp;
+    final isFinished = session.statusAt(nowMin) == 'finished';
+
+    return AnimatedOpacity(
+      opacity: isFinished ? 0.5 : 1.0,
+      duration: const Duration(milliseconds: 220),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: jp.surface,
+          border: Border.all(color: jp.border),
+          borderRadius: BorderRadius.circular(JPSpacing.rSm),
+        ),
+        child: Row(
+          children: [
+            PhosphorIcon(_icon, size: 18, color: jp.fgMuted),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                session.title,
+                style: GoogleFonts.hankenGrotesk(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: jp.fgSecondary,
+                ),
+              ),
+            ),
+            Text(
+              '${session.start}\u2013${session.end}',
+              style: GoogleFonts.jetBrainsMono(
+                fontSize: 11,
+                color: jp.fgMuted,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -270,9 +416,9 @@ class _FilterSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final jp = context.jp;
     final opts = [
-      ('all', 'All tracks'),
-      ('a', 'Track A'),
-      ('b', 'Track B'),
+      ('all', 'All halls'),
+      ('a', 'Hall A'),
+      ('b', 'Hall B'),
       ('workshop', 'Workshops'),
       ('favs', 'Favorites only'),
     ];

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -5,12 +6,14 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'theme/app_theme.dart';
 import 'data/sample_data.dart';
+import 'data/api_service.dart';
 import 'screens/now_next_screen.dart';
 import 'screens/schedule_screen.dart';
 import 'screens/my_agenda_screen.dart';
 import 'screens/map_screen.dart';
 import 'screens/connect_screen.dart';
 import 'screens/session_detail_screen.dart';
+import 'screens/speaker_detail_screen.dart';
 import 'screens/onboarding_screen.dart';
 
 class AppShell extends StatefulWidget {
@@ -25,27 +28,71 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> {
   int _tabIndex = 0;
   SessionData? _detailSession;
+  SpeakerData? _detailSpeaker;
   String? _mapHighlight;
-  Set<String> _favs = {'s2', 's5'};
-  bool _showOnboarding = true;
+  Set<String> _favs = {};
+  bool _showOnboarding = false;
+  bool _prefsLoaded = false;
   // ignore: prefer_final_fields
   bool _offline = false;
   String? _linkedInUrl;
+  String? _displayName;
 
-  // Simulated time: 10:30 → s2/s3 are live, s1 finished
-  static const _nowMin = 630;
+  Timer? _clockTimer;
+
+  // DEBUG: set to e.g. 10*60+30 to simulate 10:30, or null for real time
+  static const int? _debugNowMin = null;
+  // DEBUG: set to e.g. 1 or 2 to simulate a conference day, or null for real date
+  static const int? _debugDay = null;
+
+  int get _nowMin => _debugNowMin ?? (DateTime.now().hour * 60 + DateTime.now().minute);
+
+  int get _currentDay => _debugDay ?? JPData.dayForDate(DateTime.now());
 
   @override
   void initState() {
     super.initState();
-    _loadLinkedInUrl();
+    _loadPrefs();
+    _loadSchedule();
+    // Refresh every 30s to keep live session status current
+    _clockTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      if (mounted) setState(() {});
+    });
   }
 
-  Future<void> _loadLinkedInUrl() async {
+  @override
+  void dispose() {
+    _clockTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _loadSchedule() async {
+    // Load speakers directory first so session loading can use it
+    await JPrimeApi.loadSpeakers();
+    final ok = await JPrimeApi.loadSchedule();
+    if (mounted && ok) {
+      setState(() {});
+      // Load levels in background, refresh UI when done
+      JPrimeApi.loadLevels().then((_) {
+        if (mounted) setState(() {});
+      });
+    }
+  }
+
+  Future<void> _loadPrefs() async {
     final prefs = await SharedPreferences.getInstance();
     final url = prefs.getString('linkedin_url');
-    if (url != null && mounted) {
-      setState(() => _linkedInUrl = url);
+    final name = prefs.getString('display_name');
+    final savedFavs = prefs.getStringList('favs');
+    final onboardingDone = prefs.getBool('onboarding_done') ?? false;
+    if (mounted) {
+      setState(() {
+        _linkedInUrl = url;
+        _displayName = name;
+        if (savedFavs != null) _favs = savedFavs.toSet();
+        _showOnboarding = !onboardingDone;
+        _prefsLoaded = true;
+      });
     }
   }
 
@@ -53,12 +100,48 @@ class _AppShellState extends State<AppShell> {
     final prefs = await SharedPreferences.getInstance();
     if (url != null && url.isNotEmpty) {
       await prefs.setString('linkedin_url', url);
+      // Auto-extract name from URL if no name is set yet
+      if (_displayName == null || _displayName!.isEmpty) {
+        final extracted = _nameFromLinkedInUrl(url);
+        if (extracted != null) {
+          await prefs.setString('display_name', extracted);
+          if (mounted) setState(() => _displayName = extracted);
+        }
+      }
     } else {
       await prefs.remove('linkedin_url');
     }
     if (mounted) {
       setState(() => _linkedInUrl = url?.isNotEmpty == true ? url : null);
     }
+  }
+
+  Future<void> _saveDisplayName(String? name) async {
+    final prefs = await SharedPreferences.getInstance();
+    if (name != null && name.isNotEmpty) {
+      await prefs.setString('display_name', name);
+    } else {
+      await prefs.remove('display_name');
+    }
+    if (mounted) {
+      setState(() => _displayName = name?.isNotEmpty == true ? name : null);
+    }
+  }
+
+  static String? _nameFromLinkedInUrl(String url) {
+    final match = RegExp(r'linkedin\.com/in/([a-zA-Z0-9\-_%]+)').firstMatch(url);
+    if (match == null) return null;
+    final slug = match.group(1)!.replaceAll(RegExp(r'/$'), '');
+    // Skip slugs that are just IDs or numbers
+    if (RegExp(r'^\d+$').hasMatch(slug)) return null;
+    // Remove trailing numbers (e.g. "john-doe-123ab")
+    final cleaned = slug.replaceAll(RegExp(r'[\-_]\w{0,8}\d+$'), '');
+    final parts = cleaned.split(RegExp(r'[\-_]+'));
+    if (parts.isEmpty || (parts.length == 1 && parts[0].length < 2)) return null;
+    return parts
+        .where((p) => p.isNotEmpty)
+        .map((p) => p[0].toUpperCase() + p.substring(1).toLowerCase())
+        .join(' ');
   }
 
   void _toggleFav(String id, {bool forceOn = false}) {
@@ -71,9 +154,16 @@ class _AppShellState extends State<AppShell> {
         _favs = {..._favs, id};
       }
     });
+    _saveFavs();
+  }
+
+  Future<void> _saveFavs() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList('favs', _favs.toList());
   }
 
   void _openSession(SessionData s) => setState(() => _detailSession = s);
+  void _openSpeaker(SpeakerData s) => setState(() => _detailSpeaker = s);
 
   void _findRoom(SessionData s) {
     setState(() {
@@ -126,17 +216,21 @@ class _AppShellState extends State<AppShell> {
                   children: [
                     NowNextScreen(
                       nowMin: _nowMin,
+                      currentDay: _currentDay,
                       onThemeToggle: widget.onThemeToggle,
                       onOpenSession: _openSession,
                     ),
                     ScheduleScreen(
                       nowMin: _nowMin,
+                      currentDay: _currentDay > 0 ? _currentDay : 1,
                       favs: _favs,
+                      isActive: _tabIndex == 1,
                       onToggleFav: (id) => _toggleFav(id),
                       onOpenSession: _openSession,
                     ),
                     MyAgendaScreen(
                       nowMin: _nowMin,
+                      currentDay: _currentDay > 0 ? _currentDay : 1,
                       favs: _favs,
                       onToggleFav: (id, {forceOn = false}) =>
                           _toggleFav(id, forceOn: forceOn),
@@ -153,6 +247,8 @@ class _AppShellState extends State<AppShell> {
                       onThemeToggle: widget.onThemeToggle,
                       linkedInUrl: _linkedInUrl,
                       onLinkedInChanged: _saveLinkedInUrl,
+                      displayName: _displayName,
+                      onDisplayNameChanged: _saveDisplayName,
                     ),
                   ],
                 ),
@@ -183,13 +279,23 @@ class _AppShellState extends State<AppShell> {
               onFav: () => _toggleFav(_detailSession!.id),
               onClose: () => setState(() => _detailSession = null),
               onFindRoom: _findRoom,
+              onOpenSpeaker: _openSpeaker,
+            ),
+
+          // Speaker detail overlay
+          if (_detailSpeaker != null)
+            SpeakerDetailScreen(
+              speaker: _detailSpeaker!,
+              onClose: () => setState(() => _detailSpeaker = null),
             ),
 
           // Onboarding overlay
-          if (_showOnboarding)
+          if (_prefsLoaded && _showOnboarding)
             OnboardingScreen(
-              onDone: (linkedInUrl) {
+              onDone: (linkedInUrl) async {
                 setState(() => _showOnboarding = false);
+                final prefs = await SharedPreferences.getInstance();
+                await prefs.setBool('onboarding_done', true);
                 if (linkedInUrl != null) {
                   _saveLinkedInUrl(linkedInUrl);
                 }
