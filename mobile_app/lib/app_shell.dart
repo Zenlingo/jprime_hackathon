@@ -15,6 +15,7 @@ import 'screens/connect_screen.dart';
 import 'screens/session_detail_screen.dart';
 import 'screens/speaker_detail_screen.dart';
 import 'screens/onboarding_screen.dart';
+import 'data/notification_service.dart';
 
 class AppShell extends StatefulWidget {
   final VoidCallback onThemeToggle;
@@ -31,6 +32,7 @@ class _AppShellState extends State<AppShell> {
   SpeakerData? _detailSpeaker;
   String? _mapHighlight;
   Set<String> _favs = {};
+  Set<String> _reminders = {};
   bool _showOnboarding = false;
   bool _prefsLoaded = false;
   // ignore: prefer_final_fields
@@ -84,12 +86,14 @@ class _AppShellState extends State<AppShell> {
     final url = prefs.getString('linkedin_url');
     final name = prefs.getString('display_name');
     final savedFavs = prefs.getStringList('favs');
+    final savedReminders = prefs.getStringList('reminders');
     final onboardingDone = prefs.getBool('onboarding_done') ?? false;
     if (mounted) {
       setState(() {
         _linkedInUrl = url;
         _displayName = name;
         if (savedFavs != null) _favs = savedFavs.toSet();
+        if (savedReminders != null) _reminders = savedReminders.toSet();
         _showOnboarding = !onboardingDone;
         _prefsLoaded = true;
       });
@@ -160,6 +164,39 @@ class _AppShellState extends State<AppShell> {
   Future<void> _saveFavs() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setStringList('favs', _favs.toList());
+  }
+
+  Future<void> _saveReminders() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList('reminders', _reminders.toList());
+  }
+
+  bool _reminderBusy = false;
+
+  void _toggleReminder(SessionData s) {
+    if (_reminderBusy) return;
+    _reminderBusy = true;
+    Future.microtask(() => _reminderBusy = false);
+
+    final isOn = _reminders.contains(s.id);
+    if (isOn) {
+      NotificationService.cancelReminder(s.id);
+      setState(() => _reminders = {..._reminders}..remove(s.id));
+    } else {
+      // Compute session start DateTime
+      if (s.day >= 1 && s.day <= JPData.conferenceDates.length) {
+        final date = JPData.conferenceDates[s.day - 1];
+        final startTime = date.add(Duration(minutes: s.startMin));
+        NotificationService.scheduleReminder(
+          sessionId: s.id,
+          title: s.title,
+          room: s.room,
+          scheduledTime: startTime,
+        );
+      }
+      setState(() => _reminders = {..._reminders, s.id});
+    }
+    _saveReminders();
   }
 
   void _openSession(SessionData s) => setState(() => _detailSession = s);
@@ -281,6 +318,8 @@ class _AppShellState extends State<AppShell> {
               onFindRoom: _findRoom,
               onOpenSpeaker: _openSpeaker,
               displayName: _displayName,
+              remind: _reminders.contains(_detailSession!.id),
+              onRemind: () => _toggleReminder(_detailSession!),
             ),
 
           // Speaker detail overlay
