@@ -17,13 +17,7 @@ class MapScreen extends StatefulWidget {
   final String? highlight;
   final VoidCallback? onThemeToggle;
 
-  const MapScreen({
-    super.key,
-    required this.nowMin,
-    required this.onOpenSession,
-    this.highlight,
-    this.onThemeToggle,
-  });
+  const MapScreen({super.key, required this.nowMin, required this.onOpenSession, this.highlight, this.onThemeToggle});
 
   @override
   State<MapScreen> createState() => _MapScreenState();
@@ -59,30 +53,10 @@ class _MapScreenState extends State<MapScreen> {
     // Pair each anchor's real centroid with its center in the schematic
     // (see room/POI x/y/w/h in build()).
     return _VenueProjector.fit([
-      (
-        lng: z('Hall A').centroidLng,
-        lat: z('Hall A').centroidLat,
-        x: 0.36,
-        y: 0.115,
-      ),
-      (
-        lng: z('Hall B').centroidLng,
-        lat: z('Hall B').centroidLat,
-        x: 0.35,
-        y: 0.73,
-      ),
-      (
-        lng: z('Workshop').centroidLng,
-        lat: z('Workshop').centroidLat,
-        x: 0.84,
-        y: 0.65,
-      ),
-      (
-        lng: z('Food').centroidLng,
-        lat: z('Food').centroidLat,
-        x: 0.73,
-        y: 0.38,
-      ),
+      (lng: z('Hall A').centroidLng, lat: z('Hall A').centroidLat, x: 0.36, y: 0.115),
+      (lng: z('Hall B').centroidLng, lat: z('Hall B').centroidLat, x: 0.35, y: 0.73),
+      (lng: z('Workshop').centroidLng, lat: z('Workshop').centroidLat, x: 0.84, y: 0.65),
+      (lng: z('Food').centroidLng, lat: z('Food').centroidLat, x: 0.73, y: 0.38),
     ]);
   }
 
@@ -115,17 +89,14 @@ class _MapScreenState extends State<MapScreen> {
     });
     try {
       if (!await Geolocator.isLocationServiceEnabled()) {
-        _failLocate(
-          'Location services are off. Turn them on, or pick your spot.',
-        );
+        _failLocate('Location services are off. Turn them on, or pick your spot.');
         return;
       }
       var perm = await Geolocator.checkPermission();
       if (perm == LocationPermission.denied) {
         perm = await Geolocator.requestPermission();
       }
-      if (perm == LocationPermission.denied ||
-          perm == LocationPermission.deniedForever) {
+      if (perm == LocationPermission.denied || perm == LocationPermission.deniedForever) {
         _failLocate('Location permission denied. Pick your spot instead.');
         return;
       }
@@ -154,15 +125,12 @@ class _MapScreenState extends State<MapScreen> {
     if (!mounted) return;
     VenueZone? inZone;
     for (final z in venueZones) {
-      if (z.hasPolygon &&
-          _pointInPolygon(pos.latitude, pos.longitude, z.polygon)) {
+      if (z.hasPolygon && _pointInPolygon(pos.latitude, pos.longitude, z.polygon)) {
         inZone = z;
         break;
       }
     }
-    final atVenue =
-        inZone != null ||
-        _pointInPolygon(pos.latitude, pos.longitude, venueBoundary);
+    final atVenue = inZone != null || _pointInPolygon(pos.latitude, pos.longitude, venueBoundary);
     setState(() {
       _locating = false;
       _locError = null;
@@ -208,18 +176,12 @@ class _MapScreenState extends State<MapScreen> {
     final pts = [...poly];
     final cLat = pts.map((p) => p.lat).reduce((a, b) => a + b) / pts.length;
     final cLng = pts.map((p) => p.lng).reduce((a, b) => a + b) / pts.length;
-    pts.sort(
-      (a, b) => math
-          .atan2(a.lat - cLat, a.lng - cLng)
-          .compareTo(math.atan2(b.lat - cLat, b.lng - cLng)),
-    );
+    pts.sort((a, b) => math.atan2(a.lat - cLat, a.lng - cLng).compareTo(math.atan2(b.lat - cLat, b.lng - cLng)));
     bool inside = false;
     for (int i = 0, j = pts.length - 1; i < pts.length; j = i++) {
       final xi = pts[i].lng, yi = pts[i].lat;
       final xj = pts[j].lng, yj = pts[j].lat;
-      final intersects =
-          ((yi > lat) != (yj > lat)) &&
-          (lng < (xj - xi) * (lat - yi) / (yj - yi) + xi);
+      final intersects = ((yi > lat) != (yj > lat)) && (lng < (xj - xi) * (lat - yi) / (yj - yi) + xi);
       if (intersects) inside = !inside;
     }
     return inside;
@@ -232,16 +194,10 @@ class _MapScreenState extends State<MapScreen> {
     if (inZone != null) {
       final box = _zoneRects[inZone.id];
       if (box != null) {
-        final aff = _zoneAffines.putIfAbsent(
-          inZone.id,
-          () => _fitZoneAffine(inZone, box),
-        );
+        final aff = _zoneAffines.putIfAbsent(inZone.id, () => _fitZoneAffine(inZone, box));
         if (aff != null) {
           final p = aff.apply(lat, lng);
-          return Offset(
-            p.dx.clamp(box.x, box.x + box.w),
-            p.dy.clamp(box.y, box.y + box.h),
-          );
+          return Offset(p.dx.clamp(box.x, box.x + box.w), p.dy.clamp(box.y, box.y + box.h));
         }
       }
       final pt = _zonePoints[inZone.id];
@@ -291,18 +247,13 @@ class _MapScreenState extends State<MapScreen> {
     if (z.polygon.length != 4) return null;
     final refLat = z.centroidLat, refLng = z.centroidLng;
     final mPerLng = 111320.0 * math.cos(refLat * math.pi / 180.0);
-    Offset toM(double la, double ln) =>
-        Offset((ln - refLng) * mPerLng, (la - refLat) * 111320.0);
+    Offset toM(double la, double ln) => Offset((ln - refLng) * mPerLng, (la - refLat) * 111320.0);
 
     // Real corners in meters, sorted CCW so correspondences are cyclic.
     final src = z.polygon.map((p) => toM(p.lat, p.lng)).toList();
     final scx = src.map((p) => p.dx).reduce((a, b) => a + b) / 4;
     final scy = src.map((p) => p.dy).reduce((a, b) => a + b) / 4;
-    src.sort(
-      (a, b) => math
-          .atan2(a.dy - scy, a.dx - scx)
-          .compareTo(math.atan2(b.dy - scy, b.dx - scx)),
-    );
+    src.sort((a, b) => math.atan2(a.dy - scy, a.dx - scx).compareTo(math.atan2(b.dy - scy, b.dx - scx)));
 
     final dst = <Offset>[
       Offset(box.x, box.y),
@@ -320,10 +271,7 @@ class _MapScreenState extends State<MapScreen> {
     var bestScore = -1e9;
     for (final dir in [1, -1]) {
       for (var rot = 0; rot < 4; rot++) {
-        final sx = <double>[],
-            sy = <double>[],
-            dx = <double>[],
-            dy = <double>[];
+        final sx = <double>[], sy = <double>[], dx = <double>[], dy = <double>[];
         for (var i = 0; i < 4; i++) {
           final j = (((dir == 1 ? i + rot : rot - i) % 4) + 4) % 4;
           sx.add(src[j].dx);
@@ -334,12 +282,8 @@ class _MapScreenState extends State<MapScreen> {
         final aff = _Affine.fit(sx, sy, dx, dy, mPerLng, refLat, refLng);
         final s1 = math.sqrt(aff.ax * aff.ax + aff.ay * aff.ay);
         final s2 = math.sqrt(aff.bx * aff.bx + aff.by * aff.by);
-        final shear =
-            (aff.ax * aff.bx + aff.ay * aff.by).abs() / (s1 * s2 + 1e-9) +
-            (s1 - s2).abs() / (s1 + s2 + 1e-9);
-        final align =
-            _cos(Offset(aff.ax, aff.ay), gEast) +
-            _cos(Offset(aff.bx, aff.by), gNorth);
+        final shear = (aff.ax * aff.bx + aff.ay * aff.by).abs() / (s1 * s2 + 1e-9) + (s1 - s2).abs() / (s1 + s2 + 1e-9);
+        final align = _cos(Offset(aff.ax, aff.ay), gEast) + _cos(Offset(aff.bx, aff.by), gNorth);
         final score = align * 2.0 - shear; // orientation first, then shape
         if (score > bestScore) {
           bestScore = score;
@@ -373,15 +317,12 @@ class _MapScreenState extends State<MapScreen> {
       if (perm == LocationPermission.denied) {
         perm = await Geolocator.requestPermission();
       }
-      if (perm == LocationPermission.denied ||
-          perm == LocationPermission.deniedForever) {
+      if (perm == LocationPermission.denied || perm == LocationPermission.deniedForever) {
         _failLocate('Location permission denied.');
         return;
       }
       final pos = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
-        ),
+        locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
       );
       final coord = '${pos.latitude}, ${pos.longitude}';
       if (!mounted) return;
@@ -389,9 +330,7 @@ class _MapScreenState extends State<MapScreen> {
         context: context,
         builder: (ctx) => AlertDialog(
           title: const Text('Captured location'),
-          content: SelectableText(
-            '$coord\n\n±${pos.accuracy.round()}m accuracy\n\nPaste this into venue_zones.dart.',
-          ),
+          content: SelectableText('$coord\n\n±${pos.accuracy.round()}m accuracy\n\nPaste this into venue_zones.dart.'),
           actions: [
             TextButton(
               onPressed: () {
@@ -436,9 +375,7 @@ class _MapScreenState extends State<MapScreen> {
             Flexible(
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(16),
-                child: InteractiveViewer(
-                  child: Image.asset(asset, fit: BoxFit.contain),
-                ),
+                child: InteractiveViewer(child: Image.asset(asset, fit: BoxFit.contain)),
               ),
             ),
             const SizedBox(height: 14),
@@ -447,11 +384,7 @@ class _MapScreenState extends State<MapScreen> {
                 Expanded(
                   child: Text(
                     label,
-                    style: GoogleFonts.spaceGrotesk(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                    ),
+                    style: GoogleFonts.spaceGrotesk(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.white),
                   ),
                 ),
                 GestureDetector(
@@ -459,16 +392,9 @@ class _MapScreenState extends State<MapScreen> {
                   child: Container(
                     width: 40,
                     height: 40,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.white.withValues(alpha: 0.15),
-                    ),
+                    decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withValues(alpha: 0.15)),
                     alignment: Alignment.center,
-                    child: PhosphorIcon(
-                      PhosphorIconsRegular.x,
-                      size: 20,
-                      color: Colors.white,
-                    ),
+                    child: PhosphorIcon(PhosphorIconsRegular.x, size: 20, color: Colors.white),
                   ),
                 ),
               ],
@@ -487,38 +413,14 @@ class _MapScreenState extends State<MapScreen> {
     // Hall B lower-left, Food mid-right and Workshop on the far-right edge.
     final rooms = [
       _MapRoom(id: 'Hall A', trackId: 'a', x: 0.05, y: 0.04, w: 0.62, h: 0.15),
-      _MapRoom(
-        id: 'Companies',
-        trackId: null,
-        x: 0.06,
-        y: 0.2,
-        w: 0.60,
-        h: 0.085,
-      ),
+      _MapRoom(id: 'Companies', trackId: null, x: 0.06, y: 0.2, w: 0.60, h: 0.07),
       // _MapRoom(id: 'Chill', trackId: null, x: 0.10, y: 0.52, w: 0.34, h: 0.13),
-      _MapRoom(id: 'Hall B', trackId: 'b', x: 0.13, y: 0.65, w: 0.44, h: 0.16),
-      _MapRoom(
-        id: 'Workshop',
-        trackId: 'workshop',
-        x: 0.74,
-        y: 0.49,
-        w: 0.20,
-        h: 0.32,
-      ),
+      _MapRoom(id: 'Hall B', trackId: 'b', x: 0.13, y: 0.57, w: 0.40, h: 0.20),
+      _MapRoom(id: 'Workshop', trackId: 'workshop', x: 0.74, y: 0.75, w: 0.20, h: 0.15),
     ];
     final pois = [
-      _POI(
-        icon: PhosphorIconsRegular.info,
-        label: 'Registration',
-        x: 0.3,
-        y: 0.32,
-      ),
-      _POI(
-        icon: PhosphorIconsRegular.forkKnife,
-        label: 'Food',
-        x: 0.73,
-        y: 0.38,
-      ),
+      _POI(icon: PhosphorIconsRegular.info, label: 'Registration', x: 0.3, y: 0.30),
+      _POI(icon: PhosphorIconsRegular.forkKnife, label: 'Food', x: 0.73, y: 0.38),
     ];
 
     return Stack(
@@ -563,12 +465,8 @@ class _MapScreenState extends State<MapScreen> {
                           children: [
                             // Rooms
                             ...rooms.map((r) {
-                              final tColor = r.trackId != null
-                                  ? trackColor(context, r.trackId!)
-                                  : null;
-                              final tSoft = r.trackId != null
-                                  ? trackSoftColor(context, r.trackId!)
-                                  : null;
+                              final tColor = r.trackId != null ? trackColor(context, r.trackId!) : null;
+                              final tSoft = r.trackId != null ? trackSoftColor(context, r.trackId!) : null;
                               final sel = _selectedRoom == r.id;
                               return Positioned(
                                 left: r.x * w,
@@ -586,20 +484,12 @@ class _MapScreenState extends State<MapScreen> {
                                     decoration: BoxDecoration(
                                       color: tSoft ?? jp.surface2,
                                       border: Border.all(
-                                        color: sel
-                                            ? jp.accent
-                                            : (tColor ?? jp.borderStrong),
+                                        color: sel ? jp.accent : (tColor ?? jp.borderStrong),
                                         width: 2,
                                       ),
                                       borderRadius: BorderRadius.circular(10),
                                       boxShadow: sel
-                                          ? [
-                                              BoxShadow(
-                                                color: jp.accentSoft,
-                                                blurRadius: 0,
-                                                spreadRadius: 4,
-                                              ),
-                                            ]
+                                          ? [BoxShadow(color: jp.accentSoft, blurRadius: 0, spreadRadius: 4)]
                                           : null,
                                     ),
                                     alignment: Alignment.bottomLeft,
@@ -637,20 +527,14 @@ class _MapScreenState extends State<MapScreen> {
                                           border: Border.all(color: jp.border),
                                           boxShadow: [
                                             BoxShadow(
-                                              color: Colors.black.withValues(
-                                                alpha: 0.06,
-                                              ),
+                                              color: Colors.black.withValues(alpha: 0.06),
                                               blurRadius: 2,
                                               offset: const Offset(0, 1),
                                             ),
                                           ],
                                         ),
                                         alignment: Alignment.center,
-                                        child: PhosphorIcon(
-                                          p.icon,
-                                          size: 16,
-                                          color: jp.fgSecondary,
-                                        ),
+                                        child: PhosphorIcon(p.icon, size: 16, color: jp.fgSecondary),
                                       ),
                                       const SizedBox(height: 2),
                                       Text(
@@ -671,10 +555,7 @@ class _MapScreenState extends State<MapScreen> {
                               Positioned(
                                 left: _meDot!.dx * w - (_meApprox ? 18 : 13),
                                 top: _meDot!.dy * h - (_meApprox ? 18 : 13),
-                                child: _MeDot(
-                                  accuracyM: _meAccM,
-                                  approximate: _meApprox,
-                                ),
+                                child: _MeDot(accuracyM: _meAccM, approximate: _meApprox),
                               ),
                           ],
                         );
@@ -712,14 +593,7 @@ class _MapRoom {
   final String? trackId;
   final double x, y, w, h;
 
-  const _MapRoom({
-    required this.id,
-    this.trackId,
-    required this.x,
-    required this.y,
-    required this.w,
-    required this.h,
-  });
+  const _MapRoom({required this.id, this.trackId, required this.x, required this.y, required this.w, required this.h});
 }
 
 class _POI {
@@ -727,12 +601,7 @@ class _POI {
   final String label;
   final double x, y;
 
-  const _POI({
-    required this.icon,
-    required this.label,
-    required this.x,
-    required this.y,
-  });
+  const _POI({required this.icon, required this.label, required this.x, required this.y});
 }
 
 /// "You are here" control: a Locate button that snaps to the nearest GPS zone,
@@ -777,11 +646,7 @@ class _LocateBar extends StatelessWidget {
             ),
             child: Row(
               children: [
-                PhosphorIcon(
-                  PhosphorIconsFill.navigationArrow,
-                  size: 18,
-                  color: jp.accent,
-                ),
+                PhosphorIcon(PhosphorIconsFill.navigationArrow, size: 18, color: jp.accent),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Column(
@@ -792,10 +657,7 @@ class _LocateBar extends StatelessWidget {
                           Container(
                             width: 8,
                             height: 8,
-                            decoration: const BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Color(0xFF22C55E),
-                            ),
+                            decoration: const BoxDecoration(shape: BoxShape.circle, color: Color(0xFF22C55E)),
                           ),
                           const SizedBox(width: 6),
                           Text(
@@ -811,25 +673,15 @@ class _LocateBar extends StatelessWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        hereLabel ??
-                            status ??
-                            (locating ? 'Finding you…' : 'Tracking…'),
-                        style: GoogleFonts.spaceGrotesk(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          color: jp.fg,
-                        ),
+                        hereLabel ?? status ?? (locating ? 'Finding you…' : 'Tracking…'),
+                        style: GoogleFonts.spaceGrotesk(fontSize: 15, fontWeight: FontWeight.w700, color: jp.fg),
                       ),
                     ],
                   ),
                 ),
                 GestureDetector(
                   onTap: onStop,
-                  child: PhosphorIcon(
-                    PhosphorIconsRegular.x,
-                    size: 16,
-                    color: jp.fgMuted,
-                  ),
+                  child: PhosphorIcon(PhosphorIconsRegular.x, size: 16, color: jp.fgMuted),
                 ),
               ],
             ),
@@ -841,27 +693,16 @@ class _LocateBar extends StatelessWidget {
             onLongPress: onCapture,
             child: Container(
               padding: const EdgeInsets.symmetric(vertical: 13),
-              decoration: BoxDecoration(
-                color: jp.accent,
-                borderRadius: BorderRadius.circular(JPSpacing.rMd),
-              ),
+              decoration: BoxDecoration(color: jp.accent, borderRadius: BorderRadius.circular(JPSpacing.rMd)),
               alignment: Alignment.center,
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  PhosphorIcon(
-                    PhosphorIconsFill.navigationArrow,
-                    size: 17,
-                    color: jp.onAccent,
-                  ),
+                  PhosphorIcon(PhosphorIconsFill.navigationArrow, size: 17, color: jp.onAccent),
                   const SizedBox(width: 9),
                   Text(
                     'Turn on live location',
-                    style: GoogleFonts.spaceGrotesk(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: jp.onAccent,
-                    ),
+                    style: GoogleFonts.spaceGrotesk(fontSize: 14, fontWeight: FontWeight.w700, color: jp.onAccent),
                   ),
                 ],
               ),
@@ -869,13 +710,7 @@ class _LocateBar extends StatelessWidget {
           ),
         if (error != null) ...[
           const SizedBox(height: 8),
-          Text(
-            error!,
-            style: GoogleFonts.hankenGrotesk(
-              fontSize: 12,
-              color: jp.fgSecondary,
-            ),
-          ),
+          Text(error!, style: GoogleFonts.hankenGrotesk(fontSize: 12, color: jp.fgSecondary)),
           const SizedBox(height: 8),
           Wrap(
             spacing: 8,
@@ -885,10 +720,7 @@ class _LocateBar extends StatelessWidget {
                   (z) => GestureDetector(
                     onTap: () => onPickManual(z),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 7,
-                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                       decoration: BoxDecoration(
                         color: jp.surface2,
                         border: Border.all(color: jp.border),
@@ -896,11 +728,7 @@ class _LocateBar extends StatelessWidget {
                       ),
                       child: Text(
                         z.label,
-                        style: GoogleFonts.hankenGrotesk(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: jp.fg,
-                        ),
+                        style: GoogleFonts.hankenGrotesk(fontSize: 13, fontWeight: FontWeight.w600, color: jp.fg),
                       ),
                     ),
                   ),
@@ -925,10 +753,8 @@ class _MeDot extends StatefulWidget {
 }
 
 class _MeDotState extends State<_MeDot> with SingleTickerProviderStateMixin {
-  late final AnimationController _c = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 1600),
-  )..repeat();
+  late final AnimationController _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 1600))
+    ..repeat();
 
   @override
   void dispose() {
@@ -956,9 +782,7 @@ class _MeDotState extends State<_MeDot> with SingleTickerProviderStateMixin {
                 height: 12 + haloMax * t,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: jp.accent.withValues(
-                    alpha: (approx ? 0.20 : 0.28) * (1 - t),
-                  ),
+                  color: jp.accent.withValues(alpha: (approx ? 0.20 : 0.28) * (1 - t)),
                 ),
               ),
               child!,
@@ -971,19 +795,10 @@ class _MeDotState extends State<_MeDot> with SingleTickerProviderStateMixin {
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: approx ? jp.accent.withValues(alpha: 0.30) : jp.accent,
-            border: Border.all(
-              color: approx ? jp.accent : Colors.white,
-              width: 2.5,
-            ),
+            border: Border.all(color: approx ? jp.accent : Colors.white, width: 2.5),
             boxShadow: approx
                 ? null
-                : [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.25),
-                      blurRadius: 3,
-                      offset: const Offset(0, 1),
-                    ),
-                  ],
+                : [BoxShadow(color: Colors.black.withValues(alpha: 0.25), blurRadius: 3, offset: const Offset(0, 1))],
           ),
         ),
       ),
@@ -1010,9 +825,7 @@ class _VenueProjector {
   final List<double> _cx, _cy; // [a, b, c] coefficients for x and y
   _VenueProjector._(this._mLng, this._mLat, this._cx, this._cy);
 
-  factory _VenueProjector.fit(
-    List<({double lng, double lat, double x, double y})> pts,
-  ) {
+  factory _VenueProjector.fit(List<({double lng, double lat, double x, double y})> pts) {
     final n = pts.length;
     final mLng = pts.map((p) => p.lng).reduce((a, b) => a + b) / n;
     final mLat = pts.map((p) => p.lat).reduce((a, b) => a + b) / n;
@@ -1058,17 +871,7 @@ class _VenueProjector {
 class _Affine {
   final double ax, bx, cx, ay, by, cy;
   final double refLat, refLng, mPerLng;
-  const _Affine(
-    this.ax,
-    this.bx,
-    this.cx,
-    this.ay,
-    this.by,
-    this.cy,
-    this.refLat,
-    this.refLng,
-    this.mPerLng,
-  );
+  const _Affine(this.ax, this.bx, this.cx, this.ay, this.by, this.cy, this.refLat, this.refLng, this.mPerLng);
 
   factory _Affine.fit(
     List<double> sx,
@@ -1103,17 +906,7 @@ class _Affine {
       ],
       [...bY],
     );
-    return _Affine(
-      cX[0],
-      cX[1],
-      cX[2],
-      cY[0],
-      cY[1],
-      cY[2],
-      refLat,
-      refLng,
-      mPerLng,
-    );
+    return _Affine(cX[0], cX[1], cX[2], cY[0], cY[1], cY[2], refLat, refLng, mPerLng);
   }
 
   Offset apply(double lat, double lng) {
@@ -1170,11 +963,7 @@ class _ThemeButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(JPSpacing.rPill),
         ),
         alignment: Alignment.center,
-        child: PhosphorIcon(
-          isDark ? PhosphorIconsFill.sun : PhosphorIconsFill.moonStars,
-          size: 19,
-          color: jp.fg,
-        ),
+        child: PhosphorIcon(isDark ? PhosphorIconsFill.sun : PhosphorIconsFill.moonStars, size: 19, color: jp.fg),
       ),
     );
   }
