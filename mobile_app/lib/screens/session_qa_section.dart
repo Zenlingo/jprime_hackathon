@@ -20,12 +20,14 @@ class SessionQASection extends StatefulWidget {
 
 class _SessionQASectionState extends State<SessionQASection> {
   final _controller = TextEditingController();
+  late final Stream<List<Question>> _questionsStream;
   String? _deviceId;
   bool _sending = false;
 
   @override
   void initState() {
     super.initState();
+    _questionsStream = QAService.questionsStream(widget.sessionId);
     _loadDeviceId();
   }
 
@@ -79,7 +81,7 @@ class _SessionQASectionState extends State<SessionQASection> {
         // Questions list
         Expanded(
           child: StreamBuilder<List<Question>>(
-            stream: QAService.questionsStream(widget.sessionId),
+            stream: _questionsStream,
             builder: (context, snap) {
               if (snap.connectionState == ConnectionState.waiting &&
                   !snap.hasData) {
