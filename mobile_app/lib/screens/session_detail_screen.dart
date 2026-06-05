@@ -1,7 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../theme/app_theme.dart';
 import '../data/sample_data.dart';
 import '../widgets/app_header.dart';
@@ -157,8 +157,7 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
                 // Time + room
                 Row(
                   children: [
-                    PhosphorIcon(PhosphorIconsRegular.clock,
-                        size: 18, color: jp.fgMuted),
+                    Icon(Icons.access_time, size: 18, color: jp.fgMuted),
                     const SizedBox(width: 7),
                     Text(
                       '${s.start}\u2013${s.end}',
@@ -169,8 +168,7 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
                       ),
                     ),
                     const SizedBox(width: 16),
-                    PhosphorIcon(PhosphorIconsRegular.mapPin,
-                        size: 18, color: jp.fgMuted),
+                    Icon(Icons.location_on, size: 18, color: jp.fgMuted),
                     const SizedBox(width: 7),
                     Text(
                       s.room,
@@ -213,7 +211,7 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
                 // Speaker(s)
                 if (sp != null) ...[
                   SectionLabel(
-                    icon: PhosphorIconsRegular.user,
+                    icon: Icons.person_outline,
                     text: s.coSpeakerName != null ? 'Speakers' : 'Speaker',
                   ),
                   _SpeakerCard(
@@ -254,10 +252,10 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
                   ),
                   child: Row(
                     children: [
-                      PhosphorIcon(
+                      Icon(
                         widget.remind
-                            ? PhosphorIconsFill.bell
-                            : PhosphorIconsRegular.bell,
+                            ? Icons.notifications
+                            : Icons.notifications_none,
                         size: 20,
                         color: widget.remind ? jp.accent : jp.fgSecondary,
                       ),
@@ -303,8 +301,7 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
                   width: double.infinity,
                   child: JPButton(
                     label: 'Find room \u00B7 ${s.room}',
-                    icon: PhosphorIcon(PhosphorIconsFill.navigationArrow,
-                        size: 18, color: jp.onAccent),
+                    icon: Icon(Icons.navigation, size: 18, color: jp.onAccent),
                     onTap: () => widget.onFindRoom(s),
                   ),
                 ),
@@ -442,7 +439,7 @@ class _SpeakerCard extends StatelessWidget {
                     Row(
                       children: [
                         if (sp.twitter != null) ...[
-                          PhosphorIcon(PhosphorIconsRegular.xLogo,
+                          FaIcon(FontAwesomeIcons.xTwitter,
                               size: 14, color: jp.fgMuted),
                           const SizedBox(width: 4),
                           Text(
@@ -455,7 +452,7 @@ class _SpeakerCard extends StatelessWidget {
                           const SizedBox(width: 12),
                         ],
                         if (sp.bsky != null) ...[
-                          PhosphorIcon(PhosphorIconsRegular.butterfly,
+                          FaIcon(FontAwesomeIcons.bluesky,
                               size: 14, color: jp.fgMuted),
                           const SizedBox(width: 4),
                           Text(
@@ -473,12 +470,10 @@ class _SpeakerCard extends StatelessWidget {
               ),
             ),
             if (onTap != null)
-              PhosphorIcon(PhosphorIconsRegular.caretRight,
-                  size: 18, color: jp.fgMuted),
+              Icon(Icons.chevron_right, size: 18, color: jp.fgMuted),
           ],
         ),
       ),
     );
   }
 }
-

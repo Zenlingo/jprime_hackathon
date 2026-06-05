@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../theme/app_theme.dart';
 import '../data/sample_data.dart';
@@ -150,7 +150,7 @@ class _SpeakerDetailScreenState extends State<SpeakerDetailScreen> {
                       children: [
                         if (sp.twitter != null)
                           _SocialButton(
-                            icon: PhosphorIconsRegular.xLogo,
+                            icon: FontAwesomeIcons.xTwitter,
                             label: '@${sp.twitter}',
                             onTap: () =>
                                 _openUrl('https://x.com/${sp.twitter}'),
@@ -159,7 +159,7 @@ class _SpeakerDetailScreenState extends State<SpeakerDetailScreen> {
                           const SizedBox(width: 10),
                         if (sp.bsky != null)
                           _SocialButton(
-                            icon: PhosphorIconsRegular.butterfly,
+                            icon: FontAwesomeIcons.bluesky,
                             label: sp.bsky!,
                             onTap: () => _openUrl(
                                 'https://bsky.app/profile/${sp.bsky}'),
@@ -196,7 +196,7 @@ class _SpeakerDetailScreenState extends State<SpeakerDetailScreen> {
                       children: [
                         Row(
                           children: [
-                            PhosphorIcon(PhosphorIconsRegular.user,
+                            Icon(Icons.person_outline,
                                 size: 16, color: jp.fgMuted),
                             const SizedBox(width: 8),
                             Text(
@@ -235,7 +235,7 @@ class _SpeakerDetailScreenState extends State<SpeakerDetailScreen> {
 }
 
 class _SocialButton extends StatelessWidget {
-  final PhosphorIconData icon;
+  final FaIconData icon;
   final String label;
   final VoidCallback onTap;
 
@@ -260,7 +260,7 @@ class _SocialButton extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            PhosphorIcon(icon, size: 16, color: jp.fg),
+            FaIcon(icon, size: 16, color: jp.fg),
             const SizedBox(width: 8),
             Text(
               label,
@@ -298,8 +298,7 @@ class _SpeakerSessions extends StatelessWidget {
       children: [
         Row(
           children: [
-            PhosphorIcon(PhosphorIconsRegular.microphone,
-                size: 16, color: jp.fgMuted),
+            Icon(Icons.mic, size: 16, color: jp.fgMuted),
             const SizedBox(width: 8),
             Text(
               'Sessions',

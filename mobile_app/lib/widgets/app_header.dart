@@ -1,7 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../theme/app_theme.dart';
 
 class AppHeader extends StatelessWidget {
@@ -34,8 +33,8 @@ class AppHeader extends StatelessWidget {
             bottom: false,
             child: Row(
               children: [
-                if (onBack != null) ...[
-                  _BackButton(onBack: onBack!),
+                if (onBack case final back?) ...[
+                  _BackButton(onBack: back),
                   const SizedBox(width: 10),
                 ],
                 Expanded(
@@ -66,7 +65,7 @@ class AppHeader extends StatelessWidget {
                     ],
                   ),
                 ),
-                if (trailing != null) trailing!,
+                ?trailing,
               ],
             ),
           ),
@@ -95,7 +94,7 @@ class _BackButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(JPSpacing.rSm),
         ),
         alignment: Alignment.center,
-        child: PhosphorIcon(PhosphorIconsRegular.arrowLeft, size: 20, color: jp.fg),
+        child: Icon(Icons.arrow_back, size: 20, color: jp.fg),
       ),
     );
   }

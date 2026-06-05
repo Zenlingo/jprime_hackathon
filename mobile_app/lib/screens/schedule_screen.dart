@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../theme/app_theme.dart';
 import '../data/sample_data.dart';
 import '../widgets/app_header.dart';
@@ -237,8 +236,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                 ),
                 child: Row(
                   children: [
-                    PhosphorIcon(PhosphorIconsRegular.magnifyingGlass,
-                        size: 19, color: jp.fgMuted),
+                    Icon(Icons.search, size: 19, color: jp.fgMuted),
                     const SizedBox(width: 10),
                     Expanded(
                       child: TextField(
@@ -262,8 +260,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                           _searchController.clear();
                           setState(() => _query = '');
                         },
-                        child: PhosphorIcon(PhosphorIconsFill.xCircle,
-                            size: 18, color: jp.fgMuted),
+                        child: Icon(Icons.cancel, size: 18, color: jp.fgMuted),
                       ),
                   ],
                 ),
@@ -276,7 +273,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                   children: [
                     JPChip(
                       label: 'Filters',
-                      leading: PhosphorIcon(PhosphorIconsRegular.funnel,
+                      leading: Icon(Icons.filter_list,
                           size: 15, color: jp.fg),
                       onTap: () => setState(() => _showFilterSheet = true),
                     ),
@@ -293,10 +290,10 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                             label: e.$2,
                             selected: _filter == e.$1,
                             leading: e.$1 == 'favs'
-                                ? PhosphorIcon(
+                                ? Icon(
                                     _filter == 'favs'
-                                        ? PhosphorIconsFill.star
-                                        : PhosphorIconsRegular.star,
+                                        ? Icons.star
+                                        : Icons.star_border,
                                     size: 14,
                                     color: _filter == 'favs'
                                         ? jp.onAccent
@@ -318,7 +315,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         Expanded(
           child: grouped.isEmpty
               ? EmptyState(
-                  icon: PhosphorIconsRegular.magnifyingGlass,
+                  icon: Icons.search,
                   title: 'No talks match',
                   body: 'Try clearing the filter or search.',
                 )
@@ -350,12 +347,12 @@ class _BreakRow extends StatelessWidget {
 
   IconData get _icon {
     final t = session.title.toLowerCase();
-    if (t.contains('lunch')) return PhosphorIconsRegular.forkKnife;
-    if (t.contains('coffee')) return PhosphorIconsRegular.coffee;
-    if (t.contains('registration')) return PhosphorIconsRegular.clipboardText;
-    if (t.contains('raffle')) return PhosphorIconsRegular.gift;
-    if (t.contains('opening')) return PhosphorIconsRegular.megaphone;
-    return PhosphorIconsRegular.coffee;
+    if (t.contains('lunch')) return Icons.restaurant;
+    if (t.contains('coffee')) return Icons.local_cafe;
+    if (t.contains('registration')) return Icons.assignment;
+    if (t.contains('raffle')) return Icons.card_giftcard;
+    if (t.contains('opening')) return Icons.campaign;
+    return Icons.local_cafe;
   }
 
   @override
@@ -375,7 +372,7 @@ class _BreakRow extends StatelessWidget {
         ),
         child: Row(
           children: [
-            PhosphorIcon(_icon, size: 18, color: jp.fgMuted),
+            Icon(_icon, size: 18, color: jp.fgMuted),
             const SizedBox(width: 10),
             Expanded(
               child: Text(
@@ -478,8 +475,7 @@ class _FilterSheet extends StatelessWidget {
                           border: Border.all(color: jp.border),
                         ),
                         alignment: Alignment.center,
-                        child: PhosphorIcon(PhosphorIconsRegular.x,
-                            size: 16, color: jp.fg),
+                        child: Icon(Icons.close, size: 16, color: jp.fg),
                       ),
                     ),
                   ],
@@ -505,8 +501,7 @@ class _FilterSheet extends StatelessWidget {
                               ),
                             ),
                             if (filter == o.$1)
-                              PhosphorIcon(PhosphorIconsRegular.check,
-                                  size: 20, color: jp.accent),
+                              Icon(Icons.check, size: 20, color: jp.accent),
                           ],
                         ),
                       ),

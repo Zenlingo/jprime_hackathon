@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../theme/app_theme.dart';
 
 class FavStar extends StatefulWidget {
@@ -52,8 +51,8 @@ class _FavStarState extends State<FavStar> with SingleTickerProviderStateMixin {
               final scale = 1.0 + 0.3 * Curves.elasticOut.transform(_ctrl.value);
               return Transform.scale(scale: scale, child: child);
             },
-            child: PhosphorIcon(
-              widget.on ? PhosphorIconsFill.star : PhosphorIconsRegular.star,
+            child: Icon(
+              widget.on ? Icons.star : Icons.star_border,
               size: widget.size,
               color: widget.on ? jp.accent : jp.fgMuted,
             ),

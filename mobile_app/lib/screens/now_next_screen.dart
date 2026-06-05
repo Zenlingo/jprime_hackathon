@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../theme/app_theme.dart';
 import '../data/sample_data.dart';
 import '../widgets/app_header.dart';
@@ -57,7 +56,7 @@ class NowNextScreen extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(18, 16, 18, 90),
         children: [
           SectionLabel(
-            icon: PhosphorIconsRegular.broadcast,
+            icon: Icons.podcasts,
             text: 'All rooms',
           ),
           ...rooms.map((r) => Padding(
@@ -201,8 +200,7 @@ class _RoomCard extends StatelessWidget {
             ] else ...[
               Row(
                 children: [
-                  PhosphorIcon(PhosphorIconsRegular.coffee,
-                      size: 16, color: jp.fgMuted),
+                  Icon(Icons.local_cafe, size: 16, color: jp.fgMuted),
                   const SizedBox(width: 6),
                   Text(
                     'Between sessions',
@@ -293,8 +291,7 @@ class _DayDoneState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            PhosphorIcon(PhosphorIconsRegular.moonStars,
-                size: 48, color: jp.accent),
+            Icon(Icons.dark_mode, size: 48, color: jp.accent),
             const SizedBox(height: 16),
             Text(
               'That\u2019s a wrap for Day $currentDay!',
@@ -332,8 +329,7 @@ class _ConferenceEndedState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            PhosphorIcon(PhosphorIconsRegular.confetti,
-                size: 48, color: jp.accent),
+            Icon(Icons.celebration, size: 48, color: jp.accent),
             const SizedBox(height: 16),
             Text(
               'jPrime is over!',
@@ -371,8 +367,7 @@ class _EmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            PhosphorIcon(PhosphorIconsRegular.calendarBlank,
-                size: 48, color: jp.fgMuted),
+            Icon(Icons.calendar_today, size: 48, color: jp.fgMuted),
             const SizedBox(height: 16),
             Text(
               'No sessions today',
@@ -418,8 +413,8 @@ class _ThemeButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(JPSpacing.rPill),
         ),
         alignment: Alignment.center,
-        child: PhosphorIcon(
-          isDark ? PhosphorIconsFill.sun : PhosphorIconsFill.moonStars,
+        child: Icon(
+          isDark ? Icons.light_mode : Icons.dark_mode,
           size: 19,
           color: jp.fg,
         ),

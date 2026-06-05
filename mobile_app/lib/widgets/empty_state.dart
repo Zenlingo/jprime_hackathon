@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../theme/app_theme.dart';
 
 class EmptyState extends StatelessWidget {
-  final PhosphorIconData icon;
+  final IconData icon;
   final String title;
   final String body;
   final Widget? action;
@@ -35,7 +34,7 @@ class EmptyState extends StatelessWidget {
                 border: Border.all(color: jp.border),
               ),
               alignment: Alignment.center,
-              child: PhosphorIcon(icon, size: 28, color: jp.fgMuted),
+              child: Icon(icon, size: 28, color: jp.fgMuted),
             ),
             const SizedBox(height: 14),
             Text(

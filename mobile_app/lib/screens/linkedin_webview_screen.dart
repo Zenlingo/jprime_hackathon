@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../theme/app_theme.dart';
 
@@ -148,8 +148,7 @@ class _LinkedInFlowScreenState extends State<LinkedInFlowScreen>
                         borderRadius: BorderRadius.circular(10),
                       ),
                       alignment: Alignment.center,
-                      child: PhosphorIcon(PhosphorIconsRegular.x,
-                          size: 18, color: jp.fg),
+                      child: Icon(Icons.close, size: 18, color: jp.fg),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -181,7 +180,7 @@ class _LinkedInFlowScreenState extends State<LinkedInFlowScreen>
                             .withValues(alpha: 0.12),
                       ),
                       alignment: Alignment.center,
-                      child: PhosphorIcon(PhosphorIconsFill.linkedinLogo,
+                      child: FaIcon(FontAwesomeIcons.linkedin,
                           size: 36, color: const Color(0xFF0A66C2)),
                     ),
                     const SizedBox(height: 24),
@@ -218,7 +217,7 @@ class _LinkedInFlowScreenState extends State<LinkedInFlowScreen>
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            PhosphorIcon(PhosphorIconsFill.linkedinLogo,
+                            FaIcon(FontAwesomeIcons.linkedin,
                                 size: 20, color: Colors.white),
                             const SizedBox(width: 10),
                             Text(

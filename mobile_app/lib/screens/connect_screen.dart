@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../theme/app_theme.dart';
@@ -264,8 +264,7 @@ class _MyQRState extends State<_MyQR> {
                               name.isNotEmpty ? name : null);
                           setState(() => _editingName = false);
                         },
-                        child: PhosphorIcon(PhosphorIconsRegular.check,
-                            size: 22, color: jp.accent),
+                        child: Icon(Icons.check, size: 22, color: jp.accent),
                       ),
                     ],
                   ),
@@ -288,8 +287,7 @@ class _MyQRState extends State<_MyQR> {
                         ),
                       ),
                       const SizedBox(width: 6),
-                      PhosphorIcon(PhosphorIconsRegular.pencilSimple,
-                          size: 16, color: jp.fgMuted),
+                      Icon(Icons.edit, size: 16, color: jp.fgMuted),
                     ],
                   ),
                 ),
@@ -329,14 +327,15 @@ class _MyQRState extends State<_MyQR> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   _ActionChip(
-                    icon: PhosphorIconsRegular.pencilSimple,
+                    icon: Icons.edit,
                     label: 'Edit URL',
                     color: jp.accent,
                     onTap: () => setState(() => _editing = true),
                   ),
                   const SizedBox(width: 12),
                   _ActionChip(
-                    icon: PhosphorIconsRegular.linkedinLogo,
+                    icon: null,
+                    faIcon: FontAwesomeIcons.linkedin,
                     label: 'Reconnect',
                     color: const Color(0xFF0A66C2),
                     onTap: () async {
@@ -347,7 +346,7 @@ class _MyQRState extends State<_MyQR> {
                   ),
                   const SizedBox(width: 12),
                   _ActionChip(
-                    icon: PhosphorIconsRegular.trash,
+                    icon: Icons.delete_outline,
                     label: 'Remove',
                     color: jp.fgMuted,
                     onTap: _remove,
@@ -395,7 +394,7 @@ class _AddLinkedInPrompt extends StatelessWidget {
                   color: const Color(0xFF0A66C2).withValues(alpha: 0.12),
                 ),
                 alignment: Alignment.center,
-                child: PhosphorIcon(PhosphorIconsFill.linkedinLogo,
+                child: FaIcon(FontAwesomeIcons.linkedin,
                     size: 28, color: const Color(0xFF0A66C2)),
               ),
               const SizedBox(height: 16),
@@ -434,7 +433,7 @@ class _AddLinkedInPrompt extends StatelessWidget {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      PhosphorIcon(PhosphorIconsFill.linkedinLogo,
+                      FaIcon(FontAwesomeIcons.linkedin,
                           size: 20, color: Colors.white),
                       const SizedBox(width: 10),
                       Text(
@@ -529,7 +528,7 @@ class _LinkedInEditor extends StatelessWidget {
                   ),
                   prefixIcon: Padding(
                     padding: const EdgeInsets.only(left: 14, right: 10),
-                    child: PhosphorIcon(PhosphorIconsRegular.linkedinLogo,
+                    child: FaIcon(FontAwesomeIcons.linkedin,
                         size: 20, color: hasError ? jp.warning : jp.fgMuted),
                   ),
                   prefixIconConstraints:
@@ -625,13 +624,15 @@ class _LinkedInEditor extends StatelessWidget {
 }
 
 class _ActionChip extends StatelessWidget {
-  final PhosphorIconData icon;
+  final IconData? icon;
+  final FaIconData? faIcon;
   final String label;
   final Color color;
   final VoidCallback onTap;
 
   const _ActionChip({
-    required this.icon,
+    this.icon,
+    this.faIcon,
     required this.label,
     required this.color,
     required this.onTap,
@@ -644,7 +645,10 @@ class _ActionChip extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          PhosphorIcon(icon, size: 18, color: color),
+          if (faIcon != null)
+            FaIcon(faIcon!, size: 18, color: color)
+          else if (icon != null)
+            Icon(icon!, size: 18, color: color),
           const SizedBox(height: 4),
           Text(
             label,
@@ -746,8 +750,7 @@ class _ScanViewState extends State<_ScanView> {
               ),
             ),
             const SizedBox(height: 20),
-            PhosphorIcon(PhosphorIconsFill.checkCircle,
-                size: 48, color: jp.accent),
+            Icon(Icons.check_circle, size: 48, color: jp.accent),
             const SizedBox(height: 12),
             Text(
               'QR Code Scanned',
@@ -836,8 +839,7 @@ class _ScanViewState extends State<_ScanView> {
                   color: jp.accentSoft,
                 ),
                 alignment: Alignment.center,
-                child: PhosphorIcon(PhosphorIconsRegular.camera,
-                    size: 28, color: jp.accent),
+                child: Icon(Icons.camera_alt, size: 28, color: jp.accent),
               ),
               const SizedBox(height: 16),
               Text(
@@ -966,8 +968,8 @@ class _ThemeButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(JPSpacing.rPill),
         ),
         alignment: Alignment.center,
-        child: PhosphorIcon(
-          isDark ? PhosphorIconsFill.sun : PhosphorIconsFill.moonStars,
+        child: Icon(
+          isDark ? Icons.light_mode : Icons.dark_mode,
           size: 19,
           color: jp.fg,
         ),

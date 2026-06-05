@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../theme/app_theme.dart';
 
 class SectionLabel extends StatelessWidget {
-  final PhosphorIconData? icon;
+  final IconData? icon;
   final String text;
 
   const SectionLabel({super.key, this.icon, required this.text});
@@ -17,7 +16,7 @@ class SectionLabel extends StatelessWidget {
       child: Row(
         children: [
           if (icon != null) ...[
-            PhosphorIcon(icon!, size: 15, color: jp.fgMuted),
+            Icon(icon!, size: 15, color: jp.fgMuted),
             const SizedBox(width: 7),
           ],
           Text(

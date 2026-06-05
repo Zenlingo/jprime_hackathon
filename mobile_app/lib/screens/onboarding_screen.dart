@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../theme/app_theme.dart';
 import '../widgets/section_label.dart';
 import '../widgets/jp_chip.dart';
@@ -110,8 +110,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 width: double.infinity,
                 child: JPButton(
                   label: _step == _totalSteps - 1 ? 'Enter jPrime' : 'Continue',
-                  icon: PhosphorIcon(PhosphorIconsRegular.arrowRight,
-                      size: 18, color: jp.onAccent),
+                  icon: Icon(Icons.arrow_forward, size: 18, color: jp.onAccent),
                   onTap: _next,
                 ),
               ),
@@ -206,7 +205,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      PhosphorIcon(PhosphorIconsFill.linkedinLogo,
+                      FaIcon(FontAwesomeIcons.linkedin,
                           size: 20, color: Colors.white),
                       const SizedBox(width: 10),
                       Text(
@@ -238,7 +237,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   ),
                   child: Row(
                     children: [
-                      PhosphorIcon(PhosphorIconsRegular.checkCircle,
+                      Icon(Icons.check_circle_outline,
                           size: 18, color: jp.accent),
                       const SizedBox(width: 8),
                       Expanded(
@@ -289,7 +288,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   ),
                   prefixIcon: Padding(
                     padding: const EdgeInsets.only(left: 14, right: 10),
-                    child: PhosphorIcon(PhosphorIconsRegular.linkedinLogo,
+                    child: FaIcon(FontAwesomeIcons.linkedin,
                         size: 20, color: jp.fgMuted),
                   ),
                   prefixIconConstraints:

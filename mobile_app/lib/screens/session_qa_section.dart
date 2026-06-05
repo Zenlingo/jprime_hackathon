@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../theme/app_theme.dart';
 import '../data/qa_service.dart';
 
@@ -102,8 +101,8 @@ class _SessionQASectionState extends State<SessionQASection> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      PhosphorIcon(
-                        PhosphorIconsRegular.chatCircleDots,
+                      Icon(
+                        Icons.chat_bubble_outline,
                         size: 48,
                         color: jp.fgMuted,
                       ),
@@ -206,11 +205,7 @@ class _SessionQASectionState extends State<SessionQASection> {
                       borderRadius: BorderRadius.circular(JPSpacing.rMd),
                     ),
                     child: Center(
-                      child: PhosphorIcon(
-                              PhosphorIconsFill.paperPlaneTilt,
-                              size: 20,
-                              color: jp.onAccent,
-                            ),
+                      child: Icon(Icons.send, size: 20, color: jp.onAccent),
                     ),
                   ),
                 ),
@@ -264,10 +259,8 @@ class _QuestionCard extends StatelessWidget {
               ),
               child: Column(
                 children: [
-                  PhosphorIcon(
-                    voted
-                        ? PhosphorIconsFill.arrowFatUp
-                        : PhosphorIconsRegular.arrowFatUp,
+                  Icon(
+                    Icons.arrow_upward,
                     size: 18,
                     color: voted ? jp.accent : jp.fgMuted,
                   ),

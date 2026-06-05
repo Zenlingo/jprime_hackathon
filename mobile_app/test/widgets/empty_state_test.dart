@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:mobile_app/widgets/empty_state.dart';
 
 import 'widget_test_helpers.dart';
@@ -9,8 +8,8 @@ void main() {
   group('EmptyState', () {
     testWidgets('shows title and body text', (tester) async {
       await tester.pumpWidget(wrapWithTheme(
-        EmptyState(
-          icon: PhosphorIconsRegular.calendarBlank,
+        const EmptyState(
+          icon: Icons.calendar_today,
           title: 'No sessions',
           body: 'Star some sessions to build your agenda.',
         ),
@@ -24,11 +23,11 @@ void main() {
 
     testWidgets('renders action widget when provided', (tester) async {
       await tester.pumpWidget(wrapWithTheme(
-        EmptyState(
-          icon: PhosphorIconsRegular.calendarBlank,
+        const EmptyState(
+          icon: Icons.calendar_today,
           title: 'No sessions',
           body: 'Try browsing.',
-          action: const Text('Browse'),
+          action: Text('Browse'),
         ),
       ));
       expect(find.text('Browse'), findsOneWidget);
@@ -36,8 +35,8 @@ void main() {
 
     testWidgets('does not render action widget when null', (tester) async {
       await tester.pumpWidget(wrapWithTheme(
-        EmptyState(
-          icon: PhosphorIconsRegular.calendarBlank,
+        const EmptyState(
+          icon: Icons.calendar_today,
           title: 'Empty',
           body: 'Nothing here.',
         ),

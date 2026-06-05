@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../theme/app_theme.dart';
 import '../data/sample_data.dart';
 import '../widgets/app_header.dart';
@@ -44,8 +43,7 @@ class _MyAgendaScreenState extends State<MyAgendaScreen> {
             padding: const EdgeInsets.only(top: 8, bottom: 10),
             child: Row(
               children: [
-                PhosphorIcon(PhosphorIconsRegular.calendar,
-                    size: 16, color: jp.fgMuted),
+                Icon(Icons.calendar_today, size: 16, color: jp.fgMuted),
                 const SizedBox(width: 8),
                 Text(
                   'Day $day',
@@ -71,8 +69,7 @@ class _MyAgendaScreenState extends State<MyAgendaScreen> {
               padding: const EdgeInsets.only(bottom: 6),
               child: Row(
                 children: [
-                  PhosphorIcon(PhosphorIconsFill.warning,
-                      size: 15, color: jp.warning),
+                  Icon(Icons.warning, size: 15, color: jp.warning),
                   const SizedBox(width: 7),
                   Text(
                     'Overlaps another talk at ${s.start}',
@@ -142,12 +139,12 @@ class _MyAgendaScreenState extends State<MyAgendaScreen> {
             children: [
               // Timeline
               SectionLabel(
-                icon: PhosphorIconsRegular.calendarCheck,
+                icon: Icons.event_available,
                 text: 'Your timeline',
               ),
               if (mine.isEmpty)
                 EmptyState(
-                  icon: PhosphorIconsRegular.star,
+                  icon: Icons.star_border,
                   title: 'No favorites yet',
                   body:
                       'Tap the star on any talk to start building your agenda.',
@@ -182,8 +179,8 @@ class _ThemeButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(JPSpacing.rPill),
         ),
         alignment: Alignment.center,
-        child: PhosphorIcon(
-          isDark ? PhosphorIconsFill.sun : PhosphorIconsFill.moonStars,
+        child: Icon(
+          isDark ? Icons.light_mode : Icons.dark_mode,
           size: 19,
           color: jp.fg,
         ),

@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'theme/app_theme.dart';
 import 'data/sample_data.dart';
@@ -230,8 +229,7 @@ class _AppShellState extends State<AppShell> {
                     bottom: false,
                     child: Row(
                       children: [
-                        PhosphorIcon(PhosphorIconsFill.cloudSlash,
-                            size: 16, color: jp.warning),
+                        Icon(Icons.cloud_off, size: 16, color: jp.warning),
                         const SizedBox(width: 8),
                         Text(
                           'You\'re offline. Showing your saved schedule.',
@@ -354,11 +352,11 @@ class _TabBar extends StatelessWidget {
   const _TabBar({required this.activeIndex, required this.onTap});
 
   static final _tabs = [
-    _TabDef(PhosphorIconsRegular.broadcast, PhosphorIconsFill.broadcast, 'Now & Next'),
-    _TabDef(PhosphorIconsRegular.calendarBlank, PhosphorIconsFill.calendarBlank, 'Schedule'),
-    _TabDef(PhosphorIconsRegular.sparkle, PhosphorIconsFill.sparkle, 'My Agenda', badge: true),
-    _TabDef(PhosphorIconsRegular.mapTrifold, PhosphorIconsFill.mapTrifold, 'Map'),
-    _TabDef(PhosphorIconsRegular.usersThree, PhosphorIconsFill.usersThree, 'Connect'),
+    _TabDef(Icons.podcasts_outlined, Icons.podcasts, 'Now & Next'),
+    _TabDef(Icons.calendar_today_outlined, Icons.calendar_month, 'Schedule'),
+    _TabDef(Icons.auto_awesome_outlined, Icons.auto_awesome, 'My Agenda', badge: true),
+    _TabDef(Icons.map_outlined, Icons.map, 'Map'),
+    _TabDef(Icons.group_outlined, Icons.group, 'Connect'),
   ];
 
   @override
@@ -392,7 +390,7 @@ class _TabBar extends StatelessWidget {
                       Stack(
                         clipBehavior: Clip.none,
                         children: [
-                          PhosphorIcon(
+                          Icon(
                             active ? tab.activeIcon : tab.icon,
                             size: 24,
                             color: active ? jp.accent : jp.fgMuted,
@@ -436,8 +434,8 @@ class _TabBar extends StatelessWidget {
 }
 
 class _TabDef {
-  final PhosphorIconData icon;
-  final PhosphorIconData activeIcon;
+  final IconData icon;
+  final IconData activeIcon;
   final String label;
   final bool badge;
 

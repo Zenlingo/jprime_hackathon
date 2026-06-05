@@ -3,7 +3,6 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import '../theme/app_theme.dart';
 import '../data/sample_data.dart';
@@ -394,7 +393,7 @@ class _MapScreenState extends State<MapScreen> {
                     height: 40,
                     decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withValues(alpha: 0.15)),
                     alignment: Alignment.center,
-                    child: PhosphorIcon(PhosphorIconsRegular.x, size: 20, color: Colors.white),
+                    child: const Icon(Icons.close, size: 20, color: Colors.white),
                   ),
                 ),
               ],
@@ -419,8 +418,8 @@ class _MapScreenState extends State<MapScreen> {
       _MapRoom(id: 'Workshop', trackId: 'workshop', x: 0.74, y: 0.75, w: 0.20, h: 0.15),
     ];
     final pois = [
-      _POI(icon: PhosphorIconsRegular.info, label: 'Registration', x: 0.3, y: 0.30),
-      _POI(icon: PhosphorIconsRegular.forkKnife, label: 'Food', x: 0.73, y: 0.38),
+      _POI(icon: Icons.info_outline, label: 'Registration', x: 0.3, y: 0.30),
+      _POI(icon: Icons.restaurant, label: 'Food', x: 0.73, y: 0.38),
     ];
 
     return Stack(
@@ -534,7 +533,7 @@ class _MapScreenState extends State<MapScreen> {
                                           ],
                                         ),
                                         alignment: Alignment.center,
-                                        child: PhosphorIcon(p.icon, size: 16, color: jp.fgSecondary),
+                                        child: Icon(p.icon, size: 16, color: jp.fgSecondary),
                                       ),
                                       const SizedBox(height: 2),
                                       Text(
@@ -597,7 +596,7 @@ class _MapRoom {
 }
 
 class _POI {
-  final PhosphorIconData icon;
+  final IconData icon;
   final String label;
   final double x, y;
 
@@ -646,7 +645,7 @@ class _LocateBar extends StatelessWidget {
             ),
             child: Row(
               children: [
-                PhosphorIcon(PhosphorIconsFill.navigationArrow, size: 18, color: jp.accent),
+                Icon(Icons.navigation, size: 18, color: jp.accent),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Column(
@@ -681,7 +680,7 @@ class _LocateBar extends StatelessWidget {
                 ),
                 GestureDetector(
                   onTap: onStop,
-                  child: PhosphorIcon(PhosphorIconsRegular.x, size: 16, color: jp.fgMuted),
+                  child: Icon(Icons.close, size: 16, color: jp.fgMuted),
                 ),
               ],
             ),
@@ -698,7 +697,7 @@ class _LocateBar extends StatelessWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  PhosphorIcon(PhosphorIconsFill.navigationArrow, size: 17, color: jp.onAccent),
+                  Icon(Icons.navigation, size: 17, color: jp.onAccent),
                   const SizedBox(width: 9),
                   Text(
                     'Turn on live location',
@@ -963,7 +962,7 @@ class _ThemeButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(JPSpacing.rPill),
         ),
         alignment: Alignment.center,
-        child: PhosphorIcon(isDark ? PhosphorIconsFill.sun : PhosphorIconsFill.moonStars, size: 19, color: jp.fg),
+        child: Icon(isDark ? Icons.light_mode : Icons.dark_mode, size: 19, color: jp.fg),
       ),
     );
   }
