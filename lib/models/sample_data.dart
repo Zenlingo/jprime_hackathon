@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 
 class SpeakerData {
@@ -6,12 +7,10 @@ class SpeakerData {
   final String initials;
   final LinearGradient gradient;
   final int? numericId;
+  final String? imageUrl;
   final String? twitter;
   final String? bsky;
   String? bio;
-
-  String? get imageUrl =>
-      numericId != null ? 'https://jprime.io/image/speaker/$numericId' : null;
 
   SpeakerData({
     required this.name,
@@ -19,10 +18,74 @@ class SpeakerData {
     required this.initials,
     required this.gradient,
     this.numericId,
+    this.imageUrl,
     this.twitter,
     this.bsky,
     this.bio,
   });
+
+  factory SpeakerData.fromFirestore(Map<String, dynamic> data, String docId) {
+    final name = data['name'] as String? ?? docId;
+    final gradientColors = (data['gradientColors'] as List<dynamic>?)
+        ?.map((c) => Color(c as int))
+        .toList();
+
+    final colors = gradientColors != null && gradientColors.length >= 2
+        ? gradientColors
+        : _defaultGradientColors(name);
+
+    return SpeakerData(
+      name: name,
+      role: data['role'] as String? ?? '',
+      initials: data['initials'] as String? ?? _initials(name),
+      gradient: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: colors,
+      ),
+      numericId: data['numericId'] as int?,
+      imageUrl: data['imageUrl'] as String?,
+      twitter: data['twitter'] as String?,
+      bsky: data['bsky'] as String?,
+      bio: data['bio'] as String?,
+    );
+  }
+
+  Map<String, dynamic> toFirestore() => {
+        'name': name,
+        'role': role,
+        'initials': initials,
+        'gradientColors':
+            gradient.colors.map((c) => c.toARGB32()).toList(),
+        'numericId': numericId,
+        'imageUrl': imageUrl,
+        'twitter': twitter,
+        'bsky': bsky,
+        'bio': bio,
+      };
+
+  static String _initials(String name) {
+    final parts = name.trim().split(RegExp(r'\s+'));
+    return parts.length >= 2
+        ? '${parts.first[0]}${parts.last[0]}'.toUpperCase()
+        : name.substring(0, min(2, name.length)).toUpperCase();
+  }
+
+  static List<Color> _defaultGradientColors(String name) {
+    const palette = [
+      Color(0xFF2D6CDF), Color(0xFF0E9C8C), Color(0xFFFF5A3C),
+      Color(0xFF6D4AED), Color(0xFFC0712A), Color(0xFF1E9E6A),
+      Color(0xFFD63384), Color(0xFF0DCAF0),
+    ];
+    int hash = 0;
+    for (int i = 0; i < name.length; i++) {
+      hash = (hash * 31 + name.codeUnitAt(i)) & 0x7FFFFFFF;
+    }
+    return [
+      palette[hash % palette.length],
+      palette[(hash ~/ palette.length + 3) % palette.length],
+    ];
+  }
 }
 
 class TrackData {
@@ -42,6 +105,7 @@ class SessionData {
   String level;
   final String? speakerId;
   final String? speakerName;
+  final String? coSpeakerId;
   final String? coSpeakerName;
   final String abstract_;
   final bool isBreak;
@@ -57,11 +121,47 @@ class SessionData {
     this.level = '',
     this.speakerId,
     this.speakerName,
+    this.coSpeakerId,
     this.coSpeakerName,
     this.abstract_ = '',
     this.isBreak = false,
     this.day = 1,
   });
+
+  factory SessionData.fromFirestore(Map<String, dynamic> data, String docId) {
+    return SessionData(
+      id: docId,
+      title: data['title'] as String? ?? 'TBA',
+      trackId: data['trackId'] as String? ?? 'a',
+      room: data['room'] as String? ?? '',
+      start: data['start'] as String? ?? '00:00',
+      end: data['end'] as String? ?? '00:00',
+      level: data['level'] as String? ?? '',
+      speakerId: data['speakerId'] as String?,
+      speakerName: data['speakerName'] as String?,
+      coSpeakerId: data['coSpeakerId'] as String?,
+      coSpeakerName: data['coSpeakerName'] as String?,
+      abstract_: data['abstract'] as String? ?? '',
+      isBreak: data['isBreak'] as bool? ?? false,
+      day: data['day'] as int? ?? 1,
+    );
+  }
+
+  Map<String, dynamic> toFirestore() => {
+        'title': title,
+        'trackId': trackId,
+        'room': room,
+        'start': start,
+        'end': end,
+        'level': level,
+        'speakerId': speakerId,
+        'speakerName': speakerName,
+        'coSpeakerId': coSpeakerId,
+        'coSpeakerName': coSpeakerName,
+        'abstract': abstract_,
+        'isBreak': isBreak,
+        'day': day,
+      };
 
   int get startMin => toMin(start);
   int get endMin => toMin(end);
@@ -94,19 +194,18 @@ class SuggestionData {
 }
 
 class JPData {
-  static const tracks = {
+  static Map<String, TrackData> tracks = {
     'a': TrackData(id: 'a', label: 'Hall A'),
     'b': TrackData(id: 'b', label: 'Hall B'),
     'workshop': TrackData(id: 'workshop', label: 'Workshop'),
   };
 
-  /// Number of conference days (updated from API).
   static int totalDays = 1;
-
-  /// Actual conference dates (updated from API).
   static List<DateTime> conferenceDates = [];
+  static Map<String, SpeakerData> speakers = {};
+  static List<SessionData> sessions = [];
+  static List<SuggestionData> suggestions = [];
 
-  /// Returns the 1-based conference day for the given date, or 0 if not a conference day.
   static int dayForDate(DateTime date) {
     final d = DateTime(date.year, date.month, date.day);
     for (int i = 0; i < conferenceDates.length; i++) {
@@ -115,191 +214,12 @@ class JPData {
     return 0;
   }
 
-  /// Unique room names derived from sessions.
   static List<String> get rooms => sessions
       .where((s) => !s.isBreak)
       .map((s) => s.room)
       .toSet()
       .toList()
     ..sort();
-
-  static Map<String, SpeakerData> speakers = {
-    'venkat': SpeakerData(
-      name: 'Venkat Subramaniam',
-      role: 'Agile Developer, Inc.',
-      initials: 'VS',
-      gradient: const LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [Color(0xFF2D6CDF), Color(0xFF0E9C8C)],
-      ),
-    ),
-    'trisha': SpeakerData(
-      name: 'Trisha Gee',
-      role: 'Gradle',
-      initials: 'TG',
-      gradient: const LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [Color(0xFFFF5A3C), Color(0xFF6D4AED)],
-      ),
-    ),
-    'sharat': SpeakerData(
-      name: 'Sharat Chander',
-      role: 'Java Dev Relations',
-      initials: 'SC',
-      gradient: const LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [Color(0xFF0E9C8C), Color(0xFF2D6CDF)],
-      ),
-    ),
-    'nicolai': SpeakerData(
-      name: 'Nicolai Parlog',
-      role: 'Java Champion',
-      initials: 'NP',
-      gradient: const LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [Color(0xFF6D4AED), Color(0xFF2D6CDF)],
-      ),
-    ),
-    'mala': SpeakerData(
-      name: 'Mala Gupta',
-      role: 'Author, Manning',
-      initials: 'MG',
-      gradient: const LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [Color(0xFFC0712A), Color(0xFFFF5A3C)],
-      ),
-    ),
-    'josh': SpeakerData(
-      name: 'Josh Long',
-      role: 'Spring Developer Advocate',
-      initials: 'JL',
-      gradient: const LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [Color(0xFF1E9E6A), Color(0xFF2D6CDF)],
-      ),
-    ),
-  };
-
-  static List<SessionData> sessions = [
-    SessionData(
-      id: 's1',
-      title: 'Opening keynote: The AI agents are among us',
-      trackId: 'a',
-      room: 'Hall A',
-      start: '09:00',
-      end: '09:50',
-      level: 'All',
-      speakerId: 'trisha',
-      abstract_:
-          'A fast tour of where agentic systems sit in the JVM ecosystem today \u2014 what is real, what is hype, and what it means for the way we build software this year.',
-    ),
-    SessionData(
-      id: 's2',
-      title: 'Virtual threads, really: Project Loom in production',
-      trackId: 'a',
-      room: 'Hall A',
-      start: '10:00',
-      end: '10:50',
-      level: 'Intermediate',
-      speakerId: 'sharat',
-      abstract_:
-          'Loom brings virtual threads to the JVM, letting you write straightforward blocking code that scales to millions of concurrent tasks. We migrate a real Spring service and cover the gotchas you will hit in production \u2014 pinning, thread-locals, and observability.',
-    ),
-    SessionData(
-      id: 's3',
-      title: 'Spring AI deep-dive',
-      trackId: 'b',
-      room: 'Hall B',
-      start: '10:00',
-      end: '10:50',
-      level: 'Intermediate',
-      speakerId: 'josh',
-      abstract_:
-          'Wire LLMs, embeddings and vector stores into a Spring Boot app with the new Spring AI abstractions. Live coding, few slides.',
-    ),
-    SessionData(
-      id: 's4',
-      title: 'Pattern matching & records, a deep-dive',
-      trackId: 'b',
-      room: 'Hall B',
-      start: '11:00',
-      end: '11:50',
-      level: 'Beginner',
-      speakerId: 'nicolai',
-      abstract_:
-          'Records and pattern matching reshape how we model and branch over data. We build up from sealed types to exhaustive switches and deconstruction patterns.',
-    ),
-    SessionData(
-      id: 's5',
-      title: 'GraalVM native images for fast startup',
-      trackId: 'a',
-      room: 'Hall A',
-      start: '11:00',
-      end: '11:50',
-      level: 'Advanced',
-      speakerId: 'venkat',
-      abstract_:
-          'Cut your cold-start to milliseconds. We cover reachability metadata, the closed-world assumption, and when native images are worth the trade-offs.',
-    ),
-    SessionData(
-      id: 's6',
-      title: 'Hands-on: Testcontainers from zero',
-      trackId: 'workshop',
-      room: 'Workshop',
-      start: '11:00',
-      end: '12:30',
-      level: 'All',
-      speakerId: 'mala',
-      abstract_:
-          'Bring a laptop. We spin up real databases, message brokers and your own services as disposable containers inside your test suite.',
-    ),
-    SessionData(
-      id: 's7',
-      title: 'Lunch & hallway track',
-      trackId: 'a',
-      room: 'Chill',
-      start: '12:30',
-      end: '13:30',
-      level: 'All',
-      isBreak: true,
-    ),
-    SessionData(
-      id: 's8',
-      title: 'Structured concurrency in practice',
-      trackId: 'a',
-      room: 'Hall A',
-      start: '13:30',
-      end: '14:20',
-      level: 'Intermediate',
-      speakerId: 'sharat',
-      abstract_:
-          'Treat groups of related tasks as a single unit of work. Cleaner cancellation, clearer error handling, and no more leaked threads.',
-    ),
-    SessionData(
-      id: 's9',
-      title: 'Kotlin coroutines for Java teams',
-      trackId: 'b',
-      room: 'Hall B',
-      start: '13:30',
-      end: '14:20',
-      level: 'Beginner',
-      speakerId: 'mala',
-      abstract_:
-          'A gentle on-ramp to coroutines for teams coming from a Java background, mapping familiar concepts to suspending functions.',
-    ),
-  ];
-
-  static List<SuggestionData> suggestions = [
-    SuggestionData(sessionId: 's4', why: 'Matches your Kotlin & Spring interests'),
-    SuggestionData(sessionId: 's8', why: 'Popular with people who starred Loom'),
-    SuggestionData(sessionId: 's3', why: 'Fills your 10:00 gap on Day 1'),
-  ];
 
   static SessionData? sessionById(String id) {
     try {

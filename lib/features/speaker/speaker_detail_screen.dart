@@ -4,7 +4,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/theme/app_theme.dart';
 import '../../models/sample_data.dart';
-import '../../core/services/api_service.dart';
 import '../../core/widgets/app_header.dart';
 
 class SpeakerDetailScreen extends StatefulWidget {
@@ -22,27 +21,6 @@ class SpeakerDetailScreen extends StatefulWidget {
 }
 
 class _SpeakerDetailScreenState extends State<SpeakerDetailScreen> {
-  bool _loadingBio = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadBio();
-  }
-
-  Future<void> _loadBio() async {
-    final sp = widget.speaker;
-    if (sp.bio != null || sp.numericId == null) return;
-    setState(() => _loadingBio = true);
-    final bio = await JPrimeApi.fetchSpeakerBio(sp.numericId!);
-    if (mounted) {
-      setState(() {
-        sp.bio = bio;
-        _loadingBio = false;
-      });
-    }
-  }
-
   void _openUrl(String url) async {
     final uri = Uri.parse(url);
     if (await canLaunchUrl(uri)) {
@@ -169,21 +147,7 @@ class _SpeakerDetailScreenState extends State<SpeakerDetailScreen> {
                   ),
 
                 // Bio
-                if (_loadingBio)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 20),
-                    child: Center(
-                      child: SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: jp.accent,
-                        ),
-                      ),
-                    ),
-                  )
-                else if (sp.bio != null && sp.bio!.isNotEmpty)
+                if (sp.bio != null && sp.bio!.isNotEmpty)
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(

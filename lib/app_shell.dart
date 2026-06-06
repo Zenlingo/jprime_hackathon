@@ -5,7 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'core/theme/app_theme.dart';
 import 'models/sample_data.dart';
-import 'core/services/api_service.dart';
+import 'core/services/firestore_service.dart';
 import 'features/now_next/now_next_screen.dart';
 import 'features/schedule/schedule_screen.dart';
 import 'features/agenda/my_agenda_screen.dart';
@@ -68,15 +68,9 @@ class _AppShellState extends State<AppShell> {
   }
 
   Future<void> _loadSchedule() async {
-    // Load speakers directory first so session loading can use it
-    await JPrimeApi.loadSpeakers();
-    final ok = await JPrimeApi.loadSchedule();
+    final ok = await FirestoreService.loadAll();
     if (mounted && ok) {
       setState(() {});
-      // Load levels in background, refresh UI when done
-      JPrimeApi.loadLevels().then((_) {
-        if (mounted) setState(() {});
-      });
     }
   }
 
