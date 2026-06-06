@@ -5,10 +5,10 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../theme/app_theme.dart';
-import '../widgets/app_header.dart';
-import '../widgets/segmented_control.dart';
-import '../widgets/avatar.dart';
+import '../../core/theme/app_theme.dart';
+import '../../core/widgets/app_header.dart';
+import '../../core/widgets/segmented_control.dart';
+import '../../core/widgets/avatar.dart';
 import 'linkedin_webview_screen.dart';
 
 class ConnectScreen extends StatefulWidget {

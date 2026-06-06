@@ -3,7 +3,7 @@ import 'dart:io';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'sample_data.dart';
+import '../../models/sample_data.dart';
 
 class JPrimeApi {
   static const String baseUrl = 'https://jprime.io';

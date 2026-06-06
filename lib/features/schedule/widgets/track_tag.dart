@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../theme/app_theme.dart';
-import '../data/sample_data.dart';
+import '../../../core/theme/app_theme.dart';
+import '../../../models/sample_data.dart';
 
 Color trackColor(BuildContext context, String trackId) {
   final jp = context.jp;

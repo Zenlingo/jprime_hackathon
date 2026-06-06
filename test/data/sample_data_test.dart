@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mobile_app/data/sample_data.dart';
+import 'package:mobile_app/models/sample_data.dart';
 
 void main() {
   group('SessionData.toMin', () {

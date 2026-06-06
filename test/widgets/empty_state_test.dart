@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mobile_app/widgets/empty_state.dart';
+import 'package:mobile_app/core/widgets/empty_state.dart';
 
 import 'widget_test_helpers.dart';
 

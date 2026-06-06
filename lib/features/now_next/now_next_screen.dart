@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../theme/app_theme.dart';
-import '../data/sample_data.dart';
-import '../widgets/app_header.dart';
-import '../widgets/section_label.dart';
-import '../widgets/live_dot.dart';
-import '../widgets/progress_bar.dart';
+import '../../core/theme/app_theme.dart';
+import '../../models/sample_data.dart';
+import '../../core/widgets/app_header.dart';
+import '../../core/widgets/section_label.dart';
+import 'widgets/live_dot.dart';
+import '../schedule/widgets/progress_bar.dart';
 
 class NowNextScreen extends StatelessWidget {
   final int nowMin;

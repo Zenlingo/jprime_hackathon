@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mobile_app/data/venue_zones.dart';
+import 'package:mobile_app/features/map/data/venue_zones.dart';
 
 void main() {
   group('LatLng', () {

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../data/sample_data.dart';
+import '../../models/sample_data.dart';
 
 class SpeakerAvatar extends StatelessWidget {
   final String speakerId;

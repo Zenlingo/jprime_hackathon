@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../theme/app_theme.dart';
-import '../widgets/section_label.dart';
-import '../widgets/jp_chip.dart';
-import '../widgets/jp_button.dart';
-import 'linkedin_webview_screen.dart';
+import '../../core/theme/app_theme.dart';
+import '../../core/widgets/section_label.dart';
+import '../../core/widgets/jp_chip.dart';
+import '../../core/widgets/jp_button.dart';
+import '../connect/linkedin_webview_screen.dart';
 
 class OnboardingScreen extends StatefulWidget {
   final void Function(String? linkedInUrl) onDone;

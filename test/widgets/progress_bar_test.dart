@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mobile_app/widgets/progress_bar.dart';
+import 'package:mobile_app/features/schedule/widgets/progress_bar.dart';
 
 import 'widget_test_helpers.dart';
 

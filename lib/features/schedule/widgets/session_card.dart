@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../theme/app_theme.dart';
-import '../data/sample_data.dart';
-import 'avatar.dart';
+import '../../../core/theme/app_theme.dart';
+import '../../../models/sample_data.dart';
+import '../../../core/widgets/avatar.dart';
 import 'track_tag.dart';
 import 'level_badge.dart';
-import 'live_dot.dart';
+import '../../now_next/widgets/live_dot.dart';
 import 'progress_bar.dart';
-import 'fav_star.dart';
+import '../../../core/widgets/fav_star.dart';
 
 class SessionCard extends StatelessWidget {
   final SessionData session;

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mobile_app/widgets/level_badge.dart';
+import 'package:mobile_app/features/schedule/widgets/level_badge.dart';
 
 import 'widget_test_helpers.dart';
 

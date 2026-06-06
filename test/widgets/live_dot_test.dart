@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mobile_app/widgets/live_dot.dart';
+import 'package:mobile_app/features/now_next/widgets/live_dot.dart';
 
 import 'widget_test_helpers.dart';
 

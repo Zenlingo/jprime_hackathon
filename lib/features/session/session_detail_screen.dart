@@ -2,17 +2,17 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../theme/app_theme.dart';
-import '../data/sample_data.dart';
-import '../widgets/app_header.dart';
-import '../widgets/track_tag.dart';
-import '../widgets/level_badge.dart';
-import '../widgets/live_dot.dart';
-import '../widgets/progress_bar.dart';
-import '../widgets/fav_star.dart';
-import '../widgets/section_label.dart';
-import '../widgets/jp_switch.dart';
-import '../widgets/jp_button.dart';
+import '../../core/theme/app_theme.dart';
+import '../../models/sample_data.dart';
+import '../../core/widgets/app_header.dart';
+import '../schedule/widgets/track_tag.dart';
+import '../schedule/widgets/level_badge.dart';
+import '../now_next/widgets/live_dot.dart';
+import '../schedule/widgets/progress_bar.dart';
+import '../../core/widgets/fav_star.dart';
+import '../../core/widgets/section_label.dart';
+import '../../core/widgets/jp_switch.dart';
+import '../../core/widgets/jp_button.dart';
 import 'session_qa_section.dart';
 
 class SessionDetailScreen extends StatefulWidget {

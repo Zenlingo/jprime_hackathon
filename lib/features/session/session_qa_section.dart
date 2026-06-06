@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../theme/app_theme.dart';
-import '../data/qa_service.dart';
+import '../../core/theme/app_theme.dart';
+import 'services/qa_service.dart';
 
 class SessionQASection extends StatefulWidget {
   final String sessionId;

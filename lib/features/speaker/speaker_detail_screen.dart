@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../theme/app_theme.dart';
-import '../data/sample_data.dart';
-import '../data/api_service.dart';
-import '../widgets/app_header.dart';
+import '../../core/theme/app_theme.dart';
+import '../../models/sample_data.dart';
+import '../../core/services/api_service.dart';
+import '../../core/widgets/app_header.dart';
 
 class SpeakerDetailScreen extends StatefulWidget {
   final SpeakerData speaker;

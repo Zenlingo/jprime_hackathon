@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../theme/app_theme.dart';
-import '../data/sample_data.dart';
-import '../widgets/app_header.dart';
-import '../widgets/session_card.dart';
-import '../widgets/segmented_control.dart';
-import '../widgets/jp_chip.dart';
-import '../widgets/jp_button.dart';
-import '../widgets/empty_state.dart';
+import '../../core/theme/app_theme.dart';
+import '../../models/sample_data.dart';
+import '../../core/widgets/app_header.dart';
+import 'widgets/session_card.dart';
+import '../../core/widgets/segmented_control.dart';
+import '../../core/widgets/jp_chip.dart';
+import '../../core/widgets/jp_button.dart';
+import '../../core/widgets/empty_state.dart';
 
 class ScheduleScreen extends StatefulWidget {
   final int nowMin;

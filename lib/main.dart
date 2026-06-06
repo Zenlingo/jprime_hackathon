@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
-import 'data/qa_service.dart';
-import 'data/notification_service.dart';
-import 'theme/app_theme.dart';
+import 'features/session/services/qa_service.dart';
+import 'core/services/notification_service.dart';
+import 'core/theme/app_theme.dart';
 import 'app_shell.dart';
 
 void main() async {

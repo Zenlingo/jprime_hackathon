@@ -4,11 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:geolocator/geolocator.dart';
-import '../theme/app_theme.dart';
-import '../data/sample_data.dart';
-import '../data/venue_zones.dart';
-import '../widgets/app_header.dart';
-import '../widgets/track_tag.dart';
+import '../../core/theme/app_theme.dart';
+import '../../models/sample_data.dart';
+import 'data/venue_zones.dart';
+import '../../core/widgets/app_header.dart';
+import '../schedule/widgets/track_tag.dart';
 
 class MapScreen extends StatefulWidget {
   final int nowMin;

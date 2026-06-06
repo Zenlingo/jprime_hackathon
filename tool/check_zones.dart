@@ -1,7 +1,7 @@
 // Standalone sanity-check for the venue geofencing (run: fvm dart run tool/check_zones.dart)
 // ignore_for_file: avoid_print
 import 'dart:math' as math;
-import 'package:mobile_app/data/venue_zones.dart';
+import 'package:mobile_app/features/map/data/venue_zones.dart';
 
 bool pointInPolygon(double lat, double lng, List<LatLng> poly) {
   if (poly.length < 3) return false;
